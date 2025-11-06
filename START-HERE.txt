@@ -1,0 +1,246 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║              🚀 CodeTix CRM - Sistema Completo 🚀                ║
+║                                                                   ║
+║          Gestión Inteligente de Leads para Comerciales           ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+✅ PROYECTO COMPLETAMENTE FUNCIONAL
+   35 archivos | 133 KB | Production-ready
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 PRIMEROS PASOS
+
+1️⃣  LEÉ PRIMERO → QUICKSTART.md
+   ⏱️  10 minutos para tener todo funcionando
+
+2️⃣  DOCUMENTACIÓN COMPLETA → README.md
+   📖 Guía detallada con ejemplos y troubleshooting
+
+3️⃣  VISIÓN GENERAL → PROJECT-SUMMARY.md
+   🗺️  Qué incluye el proyecto y cómo está organizado
+
+4️⃣  REFERENCIA RÁPIDA → INDEX.md
+   🔍 Buscar archivos y funcionalidades específicas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ CARACTERÍSTICAS PRINCIPALES
+
+✅ Asignación automática de leads por zona geográfica
+✅ Notificaciones WhatsApp (360dialog/Twilio)
+✅ Panel comercial con filtros y búsqueda
+✅ Dashboard admin con métricas en tiempo real
+✅ PWA instalable (funciona como app nativa)
+✅ API webhook para integración externa
+✅ Historial completo de interacciones
+✅ Sistema multi-estado (NEW → WON/LOST)
+✅ Row Level Security (RLS) implementado
+✅ Google Sheets integration incluida
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🛠️ STACK TECNOLÓGICO
+
+Frontend/Backend    Next.js 14 (App Router)
+Base de Datos       Supabase (PostgreSQL)
+Autenticación      Supabase Auth
+Estilos            Tailwind CSS
+Hosting            Vercel (recomendado)
+WhatsApp           360dialog / Twilio
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ SETUP RÁPIDO (Copiar y pegar)
+
+# 1. Instalar dependencias
+npm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local con tus credenciales de Supabase
+
+# 3. Crear base de datos
+# → Ir a Supabase → SQL Editor
+# → Ejecutar todo el contenido de: supabase/schema.sql
+
+# 4. Crear usuario admin
+# → Supabase → Authentication → Add user
+# → Email: admin@tudominio.com
+
+# 5. Iniciar servidor
+npm run dev
+# → Abrir http://localhost:3000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 PROBAR WEBHOOK (Crear lead de prueba)
+
+curl -X POST http://localhost:3000/api/leads/intake \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Juan Pérez",
+    "phone": "+34600111222",
+    "email": "juan@test.com",
+    "city": "Vilanova i la Geltrú",
+    "postal_code": "08800",
+    "source": "Test",
+    "notes": "Lead de prueba"
+  }'
+
+Resultado esperado:
+✅ Lead creado
+✅ Asignado automáticamente a agente de zona Garraf
+✅ Aparece en dashboard del agente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 ESTRUCTURA DEL PROYECTO
+
+codetix-crm/
+├── 📖 Documentación (4 archivos)
+│   ├── README.md          → Guía completa
+│   ├── QUICKSTART.md      → Setup en 10 min
+│   ├── PROJECT-SUMMARY.md → Visión general
+│   └── INDEX.md           → Referencia rápida
+│
+├── ⚙️ Configuración (7 archivos)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── next.config.js
+│   ├── tailwind.config.js
+│   ├── .env.example
+│   └── ...
+│
+├── 🎨 Frontend (8 archivos)
+│   ├── app/               → Páginas (login, dashboard, etc)
+│   └── components/        → Componentes reutilizables
+│
+├── 🔌 API (7 archivos)
+│   └── app/api/           → Endpoints REST
+│
+├── 📚 Biblioteca (3 archivos)
+│   └── lib/               → Utilidades, WhatsApp, Supabase
+│
+├── 🗄️ Base de Datos (2 archivos)
+│   └── supabase/          → Schema SQL + datos de prueba
+│
+└── 🔧 Scripts (1 archivo)
+    └── scripts/           → Integración Google Sheets
+
+TOTAL: 35 archivos | 133 KB
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 CASOS DE USO
+
+1. Recibir leads desde landing pages
+   → Webhook: POST /api/leads/intake
+
+2. Asignación automática por zona
+   → Configurar en: lib/utils.ts
+
+3. Notificar comerciales por WhatsApp
+   → Configurar en: .env.local
+
+4. Integrar con Google Sheets
+   → Script en: scripts/google-sheets-integration.gs
+
+5. Métricas y reportes
+   → Panel admin: /dashboard/admin
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 COSTES ESTIMADOS (Producción)
+
+Vercel (Hobby)         → GRATIS
+Supabase (Starter)     → GRATIS (hasta 500MB)
+WhatsApp (360dialog)   → €0.005-0.01 por mensaje
+
+Total inicial: €0/mes 🎉
+
+Para escalar:
+Vercel Pro            → €20/mes
+Supabase Pro          → €25/mes
+WhatsApp variable     → Según uso
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 DESPLEGAR EN PRODUCCIÓN
+
+1. Crear cuenta en Vercel (gratis)
+2. Conectar repositorio de GitHub
+3. Configurar variables de entorno
+4. Deploy automático
+
+Más detalles en README.md sección "Despliegue"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🆘 AYUDA Y SOPORTE
+
+Problema              → Solución
+─────────────────────────────────────────────────────
+No puedo hacer login  → Verificar usuario en Supabase Auth
+Leads no se asignan   → Revisar agentes activos en zona
+Error 500 en API      → Verificar .env.local
+WhatsApp no funciona  → Comprobar API key y provider
+
+📖 Guía completa: README.md
+⚡ Setup rápido: QUICKSTART.md
+🔍 Buscar algo: INDEX.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 CHECKLIST PRE-PRODUCCIÓN
+
+□ Schema SQL ejecutado en Supabase
+□ Usuario admin creado
+□ Variables de entorno configuradas
+□ Probado localmente (npm run dev)
+□ Lead de prueba creado exitosamente
+□ WhatsApp configurado (opcional)
+□ Google Sheets integrado (opcional)
+□ Proyecto desplegado en Vercel
+□ Webhook probado en producción
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎓 APRENDE MÁS
+
+Next.js Docs      → https://nextjs.org/docs
+Supabase Docs     → https://supabase.com/docs
+Tailwind CSS      → https://tailwindcss.com/docs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✨ CARACTERÍSTICAS DESTACADAS
+
+🎯 Asignación inteligente    Leads asignados automáticamente
+💬 WhatsApp nativo          Contactá desde el CRM
+📊 Métricas en vivo         Dashboard con KPIs actualizados
+🔐 Seguro por diseño        RLS + Auth + Validación
+📱 PWA instalable           Funciona como app móvil
+🔌 API REST completa        Integrá con cualquier sistema
+🌍 Multi-zona               Organización geográfica
+📈 Escalable                Soporta miles de leads
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 ¡LISTO PARA USAR!
+
+Tu CRM está completamente configurado y listo para desplegar.
+
+Próximo paso → Abrí QUICKSTART.md y seguí las instrucciones
+
+¿Tenés preguntas? Revisá README.md o INDEX.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+              CodeTix CRM v1.0 - Made with ❤️
+
+           Gestión inteligente de leads para comerciales
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
