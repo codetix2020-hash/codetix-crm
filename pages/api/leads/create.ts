@@ -2,23 +2,18 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
 import { checkAuth, parseJsonBody } from './_helpers';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method === 'OPTIONS') {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-      res.status(200).end();
-      return;
+      return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
       res.setHeader('Allow', 'POST, OPTIONS');
-      res.status(405).json({ success: false, error: 'Method Not Allowed' });
-      return;
+      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     if (!checkAuth(req, res)) return;
@@ -26,14 +21,12 @@ export default async function handler(
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     const body = parseJsonBody(req);
+
     const mappedLeads = Array.isArray(body?.leads)
       ? body.leads
           .map((lead: any) => {
             const businessName = lead.name || lead.business_name;
-            if (!businessName && !lead.email && !lead.phone) {
-              return null;
-            }
-
+            if (!businessName && !lead.email && !lead.phone) return null;
             const base = {
               business_name: businessName,
               contact_name: lead.contact_name ?? null,
@@ -57,40 +50,29 @@ export default async function handler(
               assigned_to: null,
               requested_agent: lead.agent ?? null,
               created_at: lead.created_at ?? new Date().toISOString(),
-            };
-
-            return Object.fromEntries(
-              Object.entries(base).filter(([, value]) => value !== undefined)
-            );
+            };            
+            return Object.fromEntries(Object.entries(base).filter(([, v]) => v !== undefined));
           })
           .filter(Boolean)
       : null;
 
-    if (!mappedLeads || !mappedLeads.length) {
-      res.status(400).json({
-        success: false,
-        error: 'El body debe incluir un array "leads" con al menos un elemento.',
-      });
-      return;
+    if (!mappedLeads?.length) {
+      return res.status(400).json({ success: false, error: 'El body debe incluir un array "leads".' });
     }
 
     const { data, error } = await supabase
       .from('leads')
-      .upsert(mappedLeads, {
-        onConflict: 'place_id',
-        ignoreDuplicates: true,
-      })
+      .upsert(mappedLeads, { onConflict: 'place_id', ignoreDuplicates: true })
       .select('id');
 
     if (error) {
       console.error('[CREATE LEADS SUPABASE ERROR]', error);
-      res.status(500).json({ success: false, error: error.message });
-      return;
+      return res.status(500).json({ success: false, error: error.message });
     }
 
-    res.status(200).json({ success: true, count: data?.length ?? 0 });
+    return res.status(200).json({ success: true, count: data?.length ?? 0 });
   } catch (err) {
     console.error('[CREATE LEADS ERROR]', err);
-    res.status(500).json({ success: false, error: String(err) });
+    return res.status(500).json({ success: false, error: String(err) });
   }
 }

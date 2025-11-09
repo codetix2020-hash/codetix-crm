@@ -19,13 +19,10 @@ export function checkAuth(req: NextApiRequest, res: NextApiResponse): boolean {
 
 export function parseJsonBody(req: NextApiRequest) {
   if (typeof req.body === 'string') {
-    if (!req.body.length) {
-      return {};
-    }
-
+    if (!req.body.length) return {};
     try {
       return JSON.parse(req.body);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('Body must be valid JSON');
     }
   }
