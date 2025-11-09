@@ -1,26 +1,23 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-export function checkAuth(req: NextApiRequest, res: NextApiResponse): boolean {
-  const authHeader = req.headers.authorization
+export function checkAuth(
+  req: NextApiRequest,
+  res: NextApiResponse
+): boolean {
+  const expected = process.env.LEADS_API_KEY || '';
+  const header = req.headers.authorization || '';
 
-  if (!authHeader) {
-    res.status(401).json({ success: false, error: 'Falta header Authorization' })
-    return false
+  if (!expected) {
+    res.status(500).json({ success: false, error: 'LEADS_API_KEY not set' });
+    return false;
   }
 
-  const [type, token] = authHeader.split(' ')
-
-  if (type !== 'Bearer' || !token) {
-    res.status(401).json({ success: false, error: 'Formato de token inválido' })
-    return false
+  if (header !== `Bearer ${expected}`) {
+    res.status(401).json({ success: false, error: 'Token incorrecto' });
+    return false;
   }
 
-  if (token !== process.env.LEADS_API_KEY) {
-    res.status(401).json({ success: false, error: 'Token incorrecto' })
-    return false
-  }
-
-  return true
+  return true;
 }
 
 export function parseJsonBody<T = any>(req: NextApiRequest): T {
