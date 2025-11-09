@@ -1,18 +1,19 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextApiRequest, NextApiResponse } from "next";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    const key = process.env.LEADS_API_KEY || "";
+    const header = req.headers.authorization || "";
+
     return res.status(200).json({
-      status: 'ok',
+      status: "ok",
       env: process.env.NODE_ENV,
-      leadsApiKey: process.env.LEADS_API_KEY ? 'CARGADO ✅' : 'NO CARGADO ❌'
+      keyLength: key.length,
+      keyPreview: key ? key.substring(0, 4) + "..." + key.substring(key.length - 3) : "NO KEY",
+      headerReceived: header,
+      headerMatches: header === `Bearer ${key}`
     });
   } catch (err) {
-    console.error('DEBUG ERROR', err);
-    return res.status(500).json({
-      status: 'error',
-      message: 'Error interno en /api/debug',
-      error: String(err)
-    });
+    return res.status(500).json({ error: String(err) });
   }
 }
