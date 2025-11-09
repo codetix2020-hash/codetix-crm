@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabase';
-import { checkAuth } from './_helpers';
+import { checkAuth, parseJsonBody } from './_helpers';
 
 export default async function handler(
   req: NextApiRequest,
@@ -25,8 +25,7 @@ export default async function handler(
 
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-
+    const body = parseJsonBody(req);
     const mappedLeads = Array.isArray(body?.leads)
       ? body.leads
           .map((lead: any) => {
@@ -90,8 +89,8 @@ export default async function handler(
     }
 
     res.status(200).json({ success: true, count: data?.length ?? 0 });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[CREATE LEADS ERROR]', err);
-    res.status(500).json({ success: false, error: String(err?.message || err) });
+    res.status(500).json({ success: false, error: String(err) });
   }
 }

@@ -1,9 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-export function checkAuth(
-  req: NextApiRequest,
-  res: NextApiResponse
-): boolean {
+export function checkAuth(req: NextApiRequest, res: NextApiResponse): boolean {
   const expected = process.env.LEADS_API_KEY || '';
   const header = req.headers.authorization || '';
 
@@ -20,14 +17,18 @@ export function checkAuth(
   return true;
 }
 
-export function parseJsonBody<T = any>(req: NextApiRequest): T {
+export function parseJsonBody(req: NextApiRequest) {
   if (typeof req.body === 'string') {
+    if (!req.body.length) {
+      return {};
+    }
+
     try {
-      return JSON.parse(req.body) as T
+      return JSON.parse(req.body);
     } catch (error) {
-      throw new Error('Body must be valid JSON')
+      throw new Error('Body must be valid JSON');
     }
   }
 
-  return req.body as T
+  return req.body || {};
 }
