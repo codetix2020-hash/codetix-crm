@@ -1,14 +1,18 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET'])
-    return res.status(405).json({ error: 'Method Not Allowed' })
+  try {
+    return res.status(200).json({
+      status: "ok",
+      env: process.env.NODE_ENV,
+      leadsApiKey: process.env.LEADS_API_KEY ? "CARGADO ✅" : "NO CARGADO ❌"
+    });
+  } catch (err) {
+    console.error("DEBUG ERROR", err);
+    return res.status(500).json({
+      status: "error",
+      message: "Error interno en /api/debug",
+      error: String(err)
+    });
   }
-
-  return res.status(200).json({
-    status: 'ok',
-    env: process.env.NODE_ENV ?? null,
-    leadsApiKey: process.env.LEADS_API_KEY ? 'LOADED ✅' : 'NOT LOADED ❌',
-  })
 }
