@@ -7,7 +7,7 @@
  * 1. Abre tu Google Sheet
  * 2. Extensions → Apps Script
  * 3. Pega este código
- * 4. Cambia YOUR_CRM_DOMAIN por tu dominio real
+ * 4. Cambia YOUR_CRM_BASE_URL por tu dominio real
  * 5. Guarda y ejecuta sendLeadToCRM() manualmente para probar
  * 
  * COLUMNAS REQUERIDAS:
@@ -21,7 +21,12 @@
  */
 
 // ⚙️ CONFIGURACIÓN
-const CRM_API_URL = 'https://YOUR_CRM_DOMAIN.vercel.app/api/leads/intake';
+const CONFIG = {
+  CRM_BASE_URL: 'https://YOUR_CRM_BASE_URL.vercel.app',
+  CRM_API_KEY: 'YOUR_CRM_API_KEY', // Reemplaza por PropertiesService o valor seguro
+};
+
+const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads';
 
 /**
  * Envía el lead de la última fila al CRM
@@ -54,7 +59,7 @@ function sendLeadToCRM() {
     city: data[3] ? data[3].toString().trim() : null,
     postal_code: data[4] ? data[4].toString().trim() : null,
     source: 'Google Sheets',
-    notes: data[5] ? data[5].toString().trim() : null
+    notes: data[5] ? data[5].toString().trim() : null,
   };
   
   Logger.log('Enviando lead: ' + JSON.stringify(lead));
@@ -63,8 +68,11 @@ function sendLeadToCRM() {
   const options = {
     method: 'post',
     contentType: 'application/json',
-    payload: JSON.stringify(lead),
-    muteHttpExceptions: true
+    headers: {
+      Authorization: 'Bearer ' + CONFIG.CRM_API_KEY,
+    },
+    payload: JSON.stringify({ leads: [lead] }),
+    muteHttpExceptions: true,
   };
   
   try {
@@ -75,17 +83,17 @@ function sendLeadToCRM() {
     // Marcar resultado en columna G
     const statusCell = sheet.getRange(lastRow, 7);
     
-    if (statusCode === 201 || statusCode === 200) {
+    if (statusCode === 200 && result.success) {
       statusCell.setValue('✅ Enviado');
       statusCell.setBackground('#d4edda');
-      Logger.log('Lead enviado exitosamente: ' + result.lead.id);
+      Logger.log('Lead enviado exitosamente');
       
-      // Opcional: agregar ID del CRM en columna H
-      sheet.getRange(lastRow, 8).setValue(result.lead.id);
+      // Opcional: guardar respuesta recibida en columna H
+      sheet.getRange(lastRow, 8).setValue(JSON.stringify(result.received || result));
     } else {
       statusCell.setValue('❌ Error: ' + (result.error || 'Desconocido'));
       statusCell.setBackground('#f8d7da');
-      Logger.log('Error al enviar: ' + result.error);
+      Logger.log('Error al enviar: ' + (result.error || response.getContentText()));
     }
     
   } catch (error) {
@@ -169,7 +177,7 @@ function onOpen() {
  * Probar la conexión con el CRM
  */
 function testConnection() {
-  const url = CRM_API_URL.replace('/intake', '/intake');
+  const url = CONFIG.CRM_BASE_URL + '/api/debug';
   
   try {
     const response = UrlFetchApp.fetch(url, { method: 'get', muteHttpExceptions: true });
@@ -178,8 +186,9 @@ function testConnection() {
     if (response.getResponseCode() === 200) {
       SpreadsheetApp.getUi().alert(
         '✅ Conexión exitosa\n\n' +
-        'Servicio: ' + result.service + '\n' +
-        'Estado: ' + result.status
+        'Status: ' + result.status + '\n' +
+        'Env: ' + result.env + '\n' +
+        'API Key: ' + result.leadsApiKey
       );
     } else {
       SpreadsheetApp.getUi().alert('❌ Error de conexión\n\nCódigo: ' + response.getResponseCode());
