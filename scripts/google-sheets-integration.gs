@@ -10,15 +10,16 @@
  * 4. Cambia YOUR_CRM_BASE_URL por tu dominio real
  * 5. Guarda y ejecuta sendLeadToCRM() manualmente para probar
  * 
- * COLUMNAS DEL SHEET (1-based):
+ * COLUMNAS DEL SHEET (1-based) → campos permitidos:
  * A: Nombre del negocio  → business_name
- * B: Nombre de contacto → name
- * C: Teléfono           → phone
- * D: Ciudad             → city
- * E: Sector             → sector
- * F: Notas              → notes
- * G: Estado CRM (uso interno del script)
- * H: ID CRM (uso interno del script)
+ * B: Nombre de contacto  → name
+ * C: Teléfono            → phone
+ * D: Ciudad              → city
+ * E: Sector              → sector
+ * F: Notas               → notes
+ *
+ * Cualquier otra columna (Dirección, Web, Zona, Postal, etc.) se ignora.
+ * Las columnas G/H siguen usándose sólo para estado interno (no se envían).
  */
 
 // ⚙️ CONFIGURACIÓN
@@ -29,19 +30,6 @@ const CONFIG = {
 
 const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads';
 
-const ALLOWED_LEAD_FIELDS = [
-  'id',
-  'business_name',
-  'name',
-  'phone',
-  'sector',
-  'city',
-  'status',
-  'assigned_to',
-  'notes',
-  'created_at',
-];
-
 const COLUMN_INDEX = {
   business_name: 0,
   name: 1,
@@ -50,9 +38,7 @@ const COLUMN_INDEX = {
   sector: 4,
   notes: 5,
   status: null,
-  id: null,
   assigned_to: null,
-  created_at: null,
 };
 
 const STATUS_COLUMN = 7; // Columna G (1-based)
@@ -66,12 +52,6 @@ const toCellString = (value) => {
   }
   const str = value.toString().trim();
   return str.length ? str : null;
-};
-
-const isValidISODate = (value) => {
-  if (!value) return false;
-  const date = new Date(value);
-  return !Number.isNaN(date.getTime());
 };
 
 const getFieldValue = (row, field) => {
@@ -89,21 +69,34 @@ const buildLeadPayload = (row) => {
     city: getFieldValue(row, 'city'),
     notes: getFieldValue(row, 'notes'),
     status: getFieldValue(row, 'status') || DEFAULT_STATUS,
-    id: getFieldValue(row, 'id'),
     assigned_to: getFieldValue(row, 'assigned_to'),
-    created_at: getFieldValue(row, 'created_at'),
   };
 
   if (!lead.business_name && !lead.name && !lead.phone) {
     return null;
   }
 
+  return cleanLeadPayload(lead);
+};
+
+const cleanLeadPayload = (lead) => {
+  const allowed = [
+    'business_name',
+    'name',
+    'phone',
+    'sector',
+    'city',
+    'status',
+    'assigned_to',
+    'notes',
+  ];
+
   const payload = {};
-  ALLOWED_LEAD_FIELDS.forEach((field) => {
+  allowed.forEach((field) => {
     const value = lead[field];
-    if (value === null || value === undefined) return;
-    if (field === 'created_at' && !isValidISODate(value)) return;
-    payload[field] = value;
+    if (value !== null && value !== undefined && value !== '') {
+      payload[field] = value;
+    }
   });
 
   return payload;
@@ -168,7 +161,7 @@ function sendLeadToCRM() {
     
   } catch (error) {
     Logger.log('Error de conexión: ' + error.toString());
-    const statusCell = sheet.getRange(lastRow, 7);
+    const statusCell = sheet.getRange(lastRow, STATUS_COLUMN);
     statusCell.setValue('❌ Error de conexión');
     statusCell.setBackground('#f8d7da');
   }
