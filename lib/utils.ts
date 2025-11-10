@@ -14,38 +14,22 @@ export function formatDate(dateString: string) {
 }
 
 export const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'NEW':
+  const normalized = status?.toLowerCase()
+  switch (normalized) {
+    case 'nuevo':
       return 'bg-blue-100 text-blue-800';
-    case 'CONTACTED':
+    case 'contactado':
       return 'bg-yellow-100 text-yellow-800';
-    case 'DEMO':
-      return 'bg-purple-100 text-purple-800';
-    case 'WON':
+    case 'en_progreso':
+      return 'bg-indigo-100 text-indigo-800';
+    case 'ganado':
       return 'bg-green-100 text-green-800';
-    case 'LOST':
+    case 'perdido':
       return 'bg-red-100 text-red-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
 };
-
-// Determinar zona por código postal
-export function getZoneFromPostalCode(postalCode: string): string {
-  const cp = postalCode.trim().replace(/\s/g, '')
-  
-  // Garraf: 08800-08899
-  if (cp.startsWith('088')) return 'Garraf'
-  
-  // Barcelona ciudad: 08001-08042
-  if (cp.startsWith('080') && parseInt(cp.slice(3, 5)) <= 42) return 'Barcelona'
-  
-  // Barcelona área metropolitana: 08100-08299
-  if (cp.startsWith('081') || cp.startsWith('082')) return 'Barcelona'
-  
-  // Por defecto
-  return 'General'
-}
 
 // Formatear teléfono (quitar espacios, guiones, etc)
 export function formatPhone(phone: string): string {
@@ -68,11 +52,14 @@ export function getWhatsAppLink(phone: string, message?: string): string {
 // Obtener plantilla de mensaje por status
 export function getWhatsAppTemplate(leadName: string, status: string): string {
   const templates = {
-    NEW: `Hola ${leadName}, soy de CodeTix. Vi tu solicitud de presupuesto para página web. ¿Te viene bien hablar ahora?`,
-    CONTACTED: `Hola ${leadName}, te contacto nuevamente para ver si podemos coordinar una reunión y mostrarte nuestro portfolio.`,
-    DEMO: `Hola ${leadName}, ¿qué te pareció la demo? ¿Te surge alguna duda?`,
+    nuevo: `Hola ${leadName}, soy de CodeTix. Vi tu solicitud de presupuesto. ¿Te viene bien hablar ahora?`,
+    contactado: `Hola ${leadName}, te contacto para coordinar una reunión y mostrarte nuestro portfolio.`,
+    en_progreso: `Hola ${leadName}, seguimos trabajando en tu solicitud. ¿Tienes alguna duda?`,
+    ganado: `Hola ${leadName}, gracias por confiar en CodeTix. Seguimos en contacto.`,
+    perdido: `Hola ${leadName}, quedo atento si deseas retomar la conversación más adelante.`,
   }
-  return templates[status as keyof typeof templates] || `Hola ${leadName}, te contacto desde CodeTix.`
+  const normalized = status?.toLowerCase() as keyof typeof templates
+  return templates[normalized] || `Hola ${leadName}, te contacto desde CodeTix.`
 }
 
 // Formatear fecha relativa
@@ -95,25 +82,27 @@ export function formatRelativeTime(date: string | Date): string {
 // Obtener emoji del status
 export function getStatusEmoji(status: string): string {
   const emojis = {
-    NEW: '🆕',
-    CONTACTED: '📞',
-    DEMO: '🎯',
-    WON: '✅',
-    LOST: '❌',
+    nuevo: '🆕',
+    contactado: '📞',
+    en_progreso: '📈',
+    ganado: '✅',
+    perdido: '❌',
   }
-  return emojis[status as keyof typeof emojis] || '📋'
+  const normalized = status?.toLowerCase() as keyof typeof emojis
+  return emojis[normalized] || '📋'
 }
 
 // Obtener label legible del status
 export function getStatusLabel(status: string): string {
   const labels = {
-    NEW: 'Nuevo',
-    CONTACTED: 'Contactado',
-    DEMO: 'En Demo',
-    WON: 'Ganado',
-    LOST: 'Perdido',
+    nuevo: 'Nuevo',
+    contactado: 'Contactado',
+    en_progreso: 'En progreso',
+    ganado: 'Ganado',
+    perdido: 'Perdido',
   }
-  return labels[status as keyof typeof labels] || status
+  const normalized = status?.toLowerCase() as keyof typeof labels
+  return labels[normalized] || status
 }
 
 // Calcular tasa de conversión

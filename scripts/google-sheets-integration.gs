@@ -10,14 +10,15 @@
  * 4. Cambia YOUR_CRM_BASE_URL por tu dominio real
  * 5. Guarda y ejecuta sendLeadToCRM() manualmente para probar
  * 
- * COLUMNAS REQUERIDAS:
- * A: Nombre
- * B: Teléfono
- * C: Email
- * D: Ciudad
- * E: Código Postal
- * F: Notas
- * G: Estado (se actualiza automáticamente)
+ * COLUMNAS DEL SHEET (1-based):
+ * A: Nombre del negocio  → business_name
+ * B: Nombre de contacto → name
+ * C: Teléfono           → phone
+ * D: Ciudad             → city
+ * E: Sector             → sector
+ * F: Notas              → notes
+ * G: Estado CRM (uso interno del script)
+ * H: ID CRM (uso interno del script)
  */
 
 // ⚙️ CONFIGURACIÓN
@@ -27,6 +28,86 @@ const CONFIG = {
 };
 
 const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads';
+
+const ALLOWED_LEAD_FIELDS = [
+  'id',
+  'business_name',
+  'name',
+  'phone',
+  'sector',
+  'city',
+  'status',
+  'assigned_to',
+  'notes',
+  'created_at',
+];
+
+const COLUMN_INDEX = {
+  business_name: 0,
+  name: 1,
+  phone: 2,
+  city: 3,
+  sector: 4,
+  notes: 5,
+  status: null,
+  id: null,
+  assigned_to: null,
+  created_at: null,
+};
+
+const STATUS_COLUMN = 7; // Columna G (1-based)
+const RESPONSE_COLUMN = 8; // Columna H (1-based)
+const DEFAULT_STATUS = 'nuevo';
+
+const toCellString = (value) => {
+  if (value === null || value === undefined) return null;
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    return value.toISOString();
+  }
+  const str = value.toString().trim();
+  return str.length ? str : null;
+};
+
+const isValidISODate = (value) => {
+  if (!value) return false;
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime());
+};
+
+const getFieldValue = (row, field) => {
+  const index = COLUMN_INDEX[field];
+  if (typeof index !== 'number') return null;
+  return toCellString(row[index]);
+};
+
+const buildLeadPayload = (row) => {
+  const lead = {
+    business_name: getFieldValue(row, 'business_name'),
+    name: getFieldValue(row, 'name'),
+    phone: getFieldValue(row, 'phone'),
+    sector: getFieldValue(row, 'sector'),
+    city: getFieldValue(row, 'city'),
+    notes: getFieldValue(row, 'notes'),
+    status: getFieldValue(row, 'status') || DEFAULT_STATUS,
+    id: getFieldValue(row, 'id'),
+    assigned_to: getFieldValue(row, 'assigned_to'),
+    created_at: getFieldValue(row, 'created_at'),
+  };
+
+  if (!lead.business_name && !lead.name && !lead.phone) {
+    return null;
+  }
+
+  const payload = {};
+  ALLOWED_LEAD_FIELDS.forEach((field) => {
+    const value = lead[field];
+    if (value === null || value === undefined) return;
+    if (field === 'created_at' && !isValidISODate(value)) return;
+    payload[field] = value;
+  });
+
+  return payload;
+};
 
 /**
  * Envía el lead de la última fila al CRM
@@ -42,25 +123,14 @@ function sendLeadToCRM() {
   }
   
   // Obtener datos de la última fila
-  const range = sheet.getRange(lastRow, 1, 1, 6);
+  const range = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn());
   const data = range.getValues()[0];
-  
-  // Validar que hay al menos nombre
-  if (!data[0] || data[0].toString().trim() === '') {
-    Logger.log('El nombre es obligatorio');
+
+  const lead = buildLeadPayload(data);
+  if (!lead) {
+    Logger.log('Fila ignorada: se necesita al menos business_name, name o phone');
     return;
   }
-  
-  // Construir objeto lead
-  const lead = {
-    name: data[0].toString().trim(),
-    phone: data[1] ? data[1].toString().trim() : null,
-    email: data[2] ? data[2].toString().trim() : null,
-    city: data[3] ? data[3].toString().trim() : null,
-    postal_code: data[4] ? data[4].toString().trim() : null,
-    source: 'Google Sheets',
-    notes: data[5] ? data[5].toString().trim() : null,
-  };
   
   Logger.log('Enviando lead: ' + JSON.stringify(lead));
   
@@ -81,7 +151,7 @@ function sendLeadToCRM() {
     const result = JSON.parse(response.getContentText());
     
     // Marcar resultado en columna G
-    const statusCell = sheet.getRange(lastRow, 7);
+    const statusCell = sheet.getRange(lastRow, STATUS_COLUMN);
     
     if (statusCode === 200 && result.success) {
       statusCell.setValue('✅ Enviado');
@@ -89,7 +159,7 @@ function sendLeadToCRM() {
       Logger.log('Lead enviado exitosamente');
       
       // Opcional: guardar respuesta recibida en columna H
-      sheet.getRange(lastRow, 8).setValue(JSON.stringify(result.received || result));
+      sheet.getRange(lastRow, RESPONSE_COLUMN).setValue(JSON.stringify(result));
     } else {
       statusCell.setValue('❌ Error: ' + (result.error || 'Desconocido'));
       statusCell.setBackground('#f8d7da');
@@ -113,10 +183,10 @@ function sendMultipleLeads(maxRows = 10) {
   const lastRow = sheet.getLastRow();
   
   let processed = 0;
-  
+
   // Procesar desde la última fila hacia arriba
   for (let row = lastRow; row >= 2 && processed < maxRows; row--) {
-    const statusCell = sheet.getRange(row, 7);
+    const statusCell = sheet.getRange(row, STATUS_COLUMN);
     const status = statusCell.getValue();
     
     // Solo procesar filas sin estado
@@ -146,10 +216,10 @@ function onEdit(e) {
   const sheet = range.getSheet();
   const row = range.getRow();
   const col = range.getColumn();
-  
+
   // Solo procesar si se editó columna A (nombre) y no es la primera fila
   if (col === 1 && row > 1) {
-    const statusCell = sheet.getRange(row, 7);
+    const statusCell = sheet.getRange(row, STATUS_COLUMN);
     const currentStatus = statusCell.getValue();
     
     // Solo auto-enviar si no tiene estado previo
@@ -213,11 +283,11 @@ function setupSheet() {
   
   // Configurar headers
   const headers = [
-    'Nombre *',
+    'Negocio *',
+    'Contacto',
     'Teléfono',
-    'Email',
     'Ciudad',
-    'Código Postal',
+    'Sector',
     'Notas',
     'Estado CRM',
     'ID CRM'
@@ -229,12 +299,12 @@ function setupSheet() {
   sheet.getRange(1, 1, 1, headers.length).setFontColor('#ffffff');
   
   // Ajustar anchos de columna
-  sheet.setColumnWidth(1, 150); // Nombre
-  sheet.setColumnWidth(2, 120); // Teléfono
-  sheet.setColumnWidth(3, 180); // Email
+  sheet.setColumnWidth(1, 180); // Negocio
+  sheet.setColumnWidth(2, 150); // Contacto
+  sheet.setColumnWidth(3, 120); // Teléfono
   sheet.setColumnWidth(4, 150); // Ciudad
-  sheet.setColumnWidth(5, 100); // CP
-  sheet.setColumnWidth(6, 200); // Notas
+  sheet.setColumnWidth(5, 140); // Sector
+  sheet.setColumnWidth(6, 220); // Notas
   sheet.setColumnWidth(7, 120); // Estado
   sheet.setColumnWidth(8, 250); // ID
   
@@ -252,9 +322,9 @@ function addTestData() {
   const lastRow = sheet.getLastRow();
   
   const testLeads = [
-    ['Juan Pérez', '+34600111222', 'juan@test.com', 'Vilanova i la Geltrú', '08800', 'Interesado en web'],
-    ['María García', '+34600333444', 'maria@test.com', 'Barcelona', '08015', 'Necesita chatbot'],
-    ['Pedro López', '+34600555666', 'pedro@test.com', 'Sitges', '08870', 'Consulta sobre SEO']
+    ['Tienda Creativa', 'Juan Pérez', '+34600111222', 'Vilanova i la Geltrú', 'Marketing', 'Interesado en web'],
+    ['Consultoría Digital', 'María García', '+34600333444', 'Barcelona', 'Consultoría', 'Necesita chatbot'],
+    ['Restaurante El Puerto', 'Pedro López', '+34600555666', 'Sitges', 'Hostelería', 'Consulta sobre SEO']
   ];
   
   sheet.getRange(lastRow + 1, 1, testLeads.length, 6).setValues(testLeads);
