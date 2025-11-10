@@ -28,7 +28,7 @@ const CONFIG = {
   CRM_API_KEY: 'YOUR_CRM_API_KEY', // Reemplaza por PropertiesService o valor seguro
 };
 
-const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads';
+const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads/create';
 
 const ALLOWED_FIELDS = [
   'business_name',
