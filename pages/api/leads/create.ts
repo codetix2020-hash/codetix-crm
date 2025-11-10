@@ -1,17 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next'
+import type { NextApiRequest, NextApiResponse } from 'next'
 import { supabase } from '@/lib/supabase'
 import { checkAuth, parseJsonBody } from './_helpers'
-
-type LeadField =
-  | 'business_name'
-  | 'name'
-  | 'phone'
-  | 'sector'
-  | 'city'
-  | 'status'
-  | 'assigned_to'
-  | 'notes'
-  | 'created_at'
 
 type RawLead = Record<string, unknown>
 
@@ -21,105 +10,94 @@ type LeadInsertPayload = {
   phone: string | null
   sector: string | null
   city: string | null
-  status: string
+  status: 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
   assigned_to: string | null
   notes: string | null
-  created_at?: string
+  created_at: string
 }
 
 const ACCEPTED_STATUSES: LeadInsertPayload['status'][] = [
-  'nuevo',
-  'en_progreso',
-  'contactado',
-  'ganado',
-  'perdido',
+  'Nuevo',
+  'Contactado',
+  'Rechazado',
+  'Cerrado',
 ]
-
-const ALLOWED_FIELDS: LeadField[] = [
-  'business_name',
-  'name',
-  'phone',
-  'sector',
-  'city',
-  'status',
-  'assigned_to',
-  'notes',
-  'created_at',
-]
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const toStringOrNull = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null
+  if (value instanceof Date) return value.toISOString()
+  if (typeof value === 'number' && !Number.isNaN(value)) return value.toString()
   if (typeof value !== 'string') return null
   const trimmed = value.trim()
   return trimmed.length ? trimmed : null
 }
 
-const toUuidOrNull = (value: unknown): string | null => {
+const toIsoTimestamp = (value: unknown): string | null => {
   const str = toStringOrNull(value)
-  return str && UUID_REGEX.test(str) ? str : null
-}
-
-const toIsoTimestamp = (value: unknown): string | undefined => {
-  const str = toStringOrNull(value)
-  if (!str) return undefined
+  if (!str) return null
   const parsed = new Date(str)
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString()
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
 const normalizeStatus = (value: unknown): LeadInsertPayload['status'] => {
-  const raw = toStringOrNull(value)?.toLowerCase() as LeadInsertPayload['status'] | null
-  return raw && ACCEPTED_STATUSES.includes(raw) ? raw : 'nuevo'
-}
+  const raw = toStringOrNull(value)?.toLowerCase()
+  const normalized =
+    raw &&
+    ({
+      nuevo: 'Nuevo',
+      contactado: 'Contactado',
+      contactada: 'Contactado',
+      en_progreso: 'Contactado',
+      progreso: 'Contactado',
+      ganado: 'Cerrado',
+      cerrado: 'Cerrado',
+      perdida: 'Rechazado',
+      perdido: 'Rechazado',
+      rechazado: 'Rechazado',
+      rechazada: 'Rechazado',
+    } as Record<string, LeadInsertPayload['status'] | undefined>)[raw]
 
-const sanitizeLead = (lead: Partial<LeadInsertPayload>): LeadInsertPayload | null => {
-  const payload: Partial<LeadInsertPayload> = {}
-
-  ALLOWED_FIELDS.forEach((field) => {
-    const value = lead[field]
-    if (value !== undefined && value !== null && value !== '') {
-      payload[field] = value as never
-    }
-  })
-
-  const hasIdentity =
-    (payload.business_name && payload.business_name.length > 0) ||
-    (payload.name && payload.name.length > 0) ||
-    (payload.phone && payload.phone.length > 0)
-
-  if (!hasIdentity) {
-    return null
-  }
-
-  return payload as LeadInsertPayload
+  return normalized && ACCEPTED_STATUSES.includes(normalized)
+    ? normalized
+    : 'Nuevo'
 }
 
 const normalizeLead = (incoming: RawLead): LeadInsertPayload | null => {
-  const base: Partial<LeadInsertPayload> = {
-    business_name: toStringOrNull(incoming.business_name),
-    name: toStringOrNull(incoming.name),
-    phone: toStringOrNull(incoming.phone),
+  const businessName = toStringOrNull(incoming.business_name)
+  const name = toStringOrNull(incoming.name) ?? businessName
+  const phone = toStringOrNull(incoming.phone)
+
+  // Rechazar líneas totalmente vacías
+  if (!businessName && !name && !phone) return null
+
+  const createdAt = toIsoTimestamp(incoming.created_at) ?? new Date().toISOString()
+
+  return {
+    business_name: businessName,
+    name,
+    phone,
     sector: toStringOrNull(incoming.sector),
     city: toStringOrNull(incoming.city),
-    notes: toStringOrNull(incoming.notes),
-    assigned_to: toUuidOrNull(incoming.assigned_to),
     status: normalizeStatus(incoming.status),
-    created_at: toIsoTimestamp(incoming.created_at),
+    assigned_to: toStringOrNull(incoming.assigned_to),
+    notes: toStringOrNull(incoming.notes),
+    created_at: createdAt,
   }
-
-  if (!base.name && base.business_name) {
-    base.name = base.business_name
-  }
-
-  return sanitizeLead(base)
 }
 
 const extractLeadsFromBody = (body: unknown): RawLead[] => {
-  if (!body || typeof body !== 'object') return []
-  if (Array.isArray((body as Record<string, unknown>).leads)) {
-    return ((body as Record<string, unknown>).leads ?? []) as RawLead[]
-  }
-  return [body as RawLead]
+  if (!body) return []
+  if (Array.isArray(body)) return body as RawLead[]
+  if (typeof body !== 'object') return []
+
+  const record = body as Record<string, unknown>
+  const maybe = record.leads
+
+  if (Array.isArray(maybe)) return maybe as RawLead[]
+  if (maybe && typeof maybe === 'object') return [maybe as RawLead]
+
+  // Si no hay "leads", tratamos el body como un solo lead
+  return [record]
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -143,25 +121,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!checkAuth(req, res)) return
-
     res.setHeader('Access-Control-Allow-Origin', '*')
 
     const body = parseJsonBody(req)
     const incoming = extractLeadsFromBody(body)
-    const mappedLeads = incoming
-      .map((lead) => normalizeLead(lead))
-      .filter((lead): lead is LeadInsertPayload => lead !== null)
 
-    if (!mappedLeads.length) {
+    const mapped = incoming
+      .map((lead) => normalizeLead(lead))
+      .filter((l): l is LeadInsertPayload => l !== null)
+
+    if (!mapped.length) {
       return res.status(400).json({
         success: false,
         error:
-          'El body debe incluir un array "leads" (o un objeto único) con business_name, name o phone.',
+          'El body debe incluir un array "leads" (o un objeto único) con al menos business_name, name o phone.',
       })
     }
 
-    const { data, error } = await supabase.from('leads').insert(mappedLeads).select('id')
-
+    const { data, error } = await supabase.from('leads').insert(mapped).select('id')
     if (error) {
       console.error('[CREATE LEADS SUPABASE ERROR]', error)
       return res.status(500).json({ success: false, error: error.message })

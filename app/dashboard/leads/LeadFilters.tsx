@@ -1,6 +1,6 @@
 'use client'
 
-const statuses = ['NEW', 'CONTACTED', 'DEMO', 'WON', 'LOST']
+const statuses = ['Nuevo', 'Contactado', 'Rechazado', 'Cerrado'] as const
 
 interface LeadFiltersProps {
   activeStatus: string

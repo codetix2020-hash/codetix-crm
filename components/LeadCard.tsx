@@ -4,14 +4,12 @@ import { getWhatsAppLink, formatRelativeTime } from '@/lib/utils'
 
 type LeadSummary = {
   id: string
-  name: string
+  business_name?: string | null
+  name?: string | null
   status: string
   city?: string | null
-  zone?: string | null
   created_at: string
   phone?: string | null
-  email?: string | null
-  source?: string | null
   notes?: string | null
 }
 
@@ -21,17 +19,21 @@ interface LeadCardProps {
 }
 
 export default function LeadCard({ lead, showActions = true }: LeadCardProps) {
+  const displayName = lead.business_name || lead.name || 'Lead sin nombre'
+  const contactName =
+    lead.business_name && lead.name && lead.business_name !== lead.name ? lead.name : null
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{displayName}</h3>
             <StatusBadge status={lead.status} />
           </div>
           <div className="text-sm text-gray-500">
             {lead.city && <span>{lead.city}</span>}
-            {lead.zone && <span className="ml-2">• {lead.zone}</span>}
+            {contactName && <span className="ml-2">• {contactName}</span>}
           </div>
         </div>
         <div className="text-xs text-gray-400">
@@ -46,18 +48,6 @@ export default function LeadCard({ lead, showActions = true }: LeadCardProps) {
             <span>{lead.phone}</span>
           </div>
         )}
-        {lead.email && (
-          <div className="flex items-center gap-2 text-sm text-gray-700">
-            <span className="text-gray-400">📧</span>
-            <span className="truncate">{lead.email}</span>
-          </div>
-        )}
-        {lead.source && (
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <span className="text-gray-400">🔖</span>
-            <span>Fuente: {lead.source}</span>
-          </div>
-        )}
       </div>
 
       {lead.notes && (
@@ -70,7 +60,12 @@ export default function LeadCard({ lead, showActions = true }: LeadCardProps) {
         <div className="flex gap-2 pt-4 border-t border-gray-100">
           {lead.phone && (
             <a
-              href={getWhatsAppLink(lead.phone, `Hola ${lead.name}, soy de CodeTix. Te contacto por tu solicitud de presupuesto.`)}
+              href={getWhatsAppLink(
+                lead.phone,
+                `Hola ${
+                  lead.name ?? lead.business_name ?? ''
+                }, soy de CodeTix. Te contacto por tu solicitud.`
+              )}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 bg-green-600 text-white text-center px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"

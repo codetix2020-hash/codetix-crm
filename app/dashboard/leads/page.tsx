@@ -16,6 +16,26 @@ type Agent = {
 };
 
 
+const statuses = ['Nuevo', 'Contactado', 'Rechazado', 'Cerrado'] as const
+
+const toCanonicalStatus = (value?: string | null): (typeof statuses)[number] => {
+  const key = (value ?? '').toLowerCase()
+  const map: Record<string, (typeof statuses)[number]> = {
+    nuevo: 'Nuevo',
+    contactado: 'Contactado',
+    contactada: 'Contactado',
+    en_progreso: 'Contactado',
+    progreso: 'Contactado',
+    ganado: 'Cerrado',
+    cerrado: 'Cerrado',
+    rechazado: 'Rechazado',
+    rechazada: 'Rechazado',
+    perdido: 'Rechazado',
+    perdida: 'Rechazado',
+  }
+  return map[key] ?? 'Nuevo'
+}
+
 export default function LeadsPage() {
   const supabase = createClient()
   const [leads, setLeads] = useState<Lead[]>([])
@@ -41,19 +61,24 @@ export default function LeadsPage() {
         setUserRole(profile?.role || null);
 
         // Fetch de leads basado en rol
-        let query = supabase.from('leads').select(`
-          id, name, phone, email, city, status, created_at,
-          assignments ( agents ( id, users ( name, email ) ) )
-        `)
-
-        if (profile?.role === 'agent') {
-            query = query.in('id', 
-                await supabase.from('assignments').select('lead_id').eq('agent_id', session.user.id).then(({data}) => data?.map(a => a.lead_id) || [])
-            )
-        }
+        const query = supabase
+          .from('leads')
+          .select('id, business_name, name, phone, city, sector, status, notes, created_at, assigned_to')
+          .order('created_at', { ascending: false })
         
-        const { data: leadsData, error } = await query;
-        if (leadsData) setLeads(leadsData as unknown as Lead[]);
+        const { data: leadsData } = await query;
+        if (leadsData) {
+          const normalized = (leadsData as any[]).map((lead) => ({
+            ...lead,
+            status: toCanonicalStatus(lead.status),
+            sector: lead.sector ?? null,
+            assigned_to: lead.assigned_to ?? null,
+            created_at: lead.created_at
+              ? new Date(lead.created_at).toISOString()
+              : new Date().toISOString(),
+          }))
+          setLeads(normalized as Lead[])
+        }
 
 
         // Si es admin, traer todos los agentes
@@ -78,12 +103,23 @@ export default function LeadsPage() {
     fetchData()
   }, [supabase])
 
+  const serializeLead = (leadData: Partial<Lead>) => ({
+    business_name: leadData.business_name ?? null,
+    name: leadData.name ?? null,
+    phone: leadData.phone ?? null,
+    city: leadData.city ?? null,
+    sector: leadData.sector ?? null,
+    status: toCanonicalStatus(leadData.status ?? 'Nuevo'),
+    assigned_to: leadData.assigned_to ?? null,
+    notes: leadData.notes ?? null,
+  })
+
   const handleSaveLead = async (leadData: Partial<Lead>) => {
     if (leadToEdit) {
       // Lógica de actualización
       const { data, error } = await supabase
         .from('leads')
-        .update({ ...leadData, id: undefined }) // supabase no quiere el id en el update
+        .update(serializeLead(leadData))
         .eq('id', leadToEdit.id)
         .select()
         .single();
@@ -94,7 +130,7 @@ export default function LeadsPage() {
       // Lógica de creación
       const { data, error } = await supabase
         .from('leads')
-        .insert(leadData)
+        .insert(serializeLead(leadData))
         .select()
         .single();
       if (data) {
@@ -103,8 +139,21 @@ export default function LeadsPage() {
             await supabase.from('assignments').insert({ lead_id: data.id, agent_id: agents[0].id });
         }
         // Recargar leads para ver la nueva asignación
-        const { data: refreshedLeads } = await supabase.from('leads').select(`*, assignments ( agents ( users ( name ) ) )`);
-        if (refreshedLeads) setLeads(refreshedLeads as unknown as Lead[]);
+        const { data: refreshedLeads } = await supabase
+          .from('leads')
+          .select('id, business_name, name, phone, city, sector, status, notes, created_at, assigned_to')
+          .order('created_at', { ascending: false });
+        if (refreshedLeads) {
+          const normalized = (refreshedLeads as any[]).map((lead) => ({
+            ...lead,
+            status: toCanonicalStatus(lead.status),
+            assigned_to: lead.assigned_to ?? null,
+            created_at: lead.created_at
+              ? new Date(lead.created_at).toISOString()
+              : new Date().toISOString(),
+          }))
+          setLeads(normalized as Lead[])
+        }
       }
     }
     setLeadToEdit(null)

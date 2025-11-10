@@ -7,13 +7,16 @@ import { getStatusColor } from '@/lib/utils'
 
 export type Lead = {
   id: string
-  name: string
-  phone: string
-  email: string
-  city: string
-  status: 'NEW' | 'CONTACTED' | 'DEMO' | 'WON' | 'LOST'
+  business_name: string | null
+  name: string | null
+  phone: string | null
+  city: string | null
+  sector: string | null
+  status: 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
   created_at: string
-  assignments: { agents: { users: { name: string } } }[]
+  notes: string | null
+  assigned_to?: string | null
+  assignments?: { agents: { users: { name: string } } }[]
 }
 
 interface LeadCardProps {
@@ -24,7 +27,11 @@ interface LeadCardProps {
 
 export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) => {
   const [menuOpen, setMenuOpen] = useState(false)
-  const agentName = lead.assignments[0]?.agents?.users?.name || 'No asignado'
+  const agentName =
+    lead.assigned_to ||
+    lead.assignments?.[0]?.agents?.users?.name ||
+    'Sin asignar'
+  const displayName = lead.business_name || lead.name || 'Lead sin nombre'
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -42,8 +49,11 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) =>
                 <Building className="w-6 h-6 text-brand-500"/>
             </div>
             <div>
-              <h3 className="font-bold text-lg text-gray-800">{lead.name}</h3>
-              <p className="text-sm text-gray-500">{lead.phone} | {lead.email}</p>
+              <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
+              <p className="text-sm text-gray-500">
+                {lead.name && lead.business_name ? `${lead.name} • ` : ''}
+                {lead.phone || 'Sin teléfono'}
+              </p>
             </div>
         </div>
         <button
@@ -57,7 +67,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) =>
       <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
         <div>
             <p className="text-gray-400">Ciudad</p>
-            <p className="text-gray-700 font-medium">{lead.city}</p>
+            <p className="text-gray-700 font-medium">{lead.city ?? '—'}</p>
         </div>
         <div>
             <p className="text-gray-400">Agente</p>

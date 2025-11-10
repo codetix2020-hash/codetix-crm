@@ -151,10 +151,9 @@ export default function AdminDashboard() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zona</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Asignado a</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuente</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ciudad</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
               </tr>
             </thead>
@@ -162,15 +161,16 @@ export default function AdminDashboard() {
               {allLeads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{lead.name}</div>
-                    <div className="text-sm text-gray-500">{lead.phone}</div>
+                    <div className="font-medium text-gray-900">
+                      {lead.business_name || lead.name || 'Sin nombre'}
+                    </div>
+                    {lead.phone && <div className="text-sm text-gray-500">{lead.phone}</div>}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{lead.zone}</td>
                   <td className="px-4 py-3 text-sm text-gray-700">{lead.agent_name || 'Sin asignar'}</td>
                   <td className="px-4 py-3">
                     <StatusBadge status={lead.status} showEmoji={false} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{lead.source || '-'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{lead.city || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {new Date(lead.created_at).toLocaleDateString('es-ES')}
                   </td>

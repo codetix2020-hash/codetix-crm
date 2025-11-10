@@ -68,25 +68,20 @@ ON CONFLICT (id) DO UPDATE SET
 -- LEADS DE PRUEBA
 -- =====================================================
 
--- Lead 1 - Zona Garraf
-INSERT INTO leads (name, phone, email, city, postal_code, zone, source, notes, status, priority) VALUES
-('Juan Pérez', '+34600111222', 'juan@example.com', 'Vilanova i la Geltrú', '08800', 'Garraf', 'Landing Page', 'Interesado en página web corporativa', 'NEW', 2);
+INSERT INTO leads (business_name, name, phone, city, sector, status, notes) VALUES
+('Tienda Creativa', 'Juan Pérez', '+34600111222', 'Vilanova i la Geltrú', 'Marketing', 'nuevo', 'Interesado en página web corporativa');
 
--- Lead 2 - Zona Barcelona
-INSERT INTO leads (name, phone, email, city, postal_code, zone, source, notes, status, priority) VALUES
-('María García', '+34600222333', 'maria@example.com', 'Barcelona', '08015', 'Barcelona', 'Google Ads', 'Necesita e-commerce para venta online', 'NEW', 1);
+INSERT INTO leads (business_name, name, phone, city, sector, status, notes) VALUES
+('Consultoría Digital', 'María García', '+34600222333', 'Barcelona', 'Consultoría', 'contactado', 'Necesita e-commerce para venta online');
 
--- Lead 3 - Zona Garraf
-INSERT INTO leads (name, phone, email, city, postal_code, zone, source, notes, status, priority) VALUES
-('Roberto Sánchez', '+34600333444', 'roberto@example.com', 'Sitges', '08870', 'Garraf', 'Referido', 'Quiere chatbot para atención al cliente 24/7', 'NEW', 3);
+INSERT INTO leads (business_name, name, phone, city, sector, status, notes) VALUES
+('Restaurante El Puerto', 'Roberto Sánchez', '+34600333444', 'Sitges', 'Hostelería', 'en_progreso', 'Quiere chatbot para atención al cliente 24/7');
 
--- Lead 4 - Zona General
-INSERT INTO leads (name, phone, email, city, postal_code, zone, source, notes, status, priority) VALUES
-('Laura Jiménez', '+34600444555', 'laura@example.com', 'Madrid', '28001', 'General', 'Formulario Web', 'Startup busca web + app móvil', 'NEW', 1);
+INSERT INTO leads (business_name, name, phone, city, sector, status, notes) VALUES
+('Startup Solar', 'Laura Jiménez', '+34600444555', 'Madrid', 'Energía', 'nuevo', 'Busca web + app móvil');
 
--- Lead 5 - Zona Barcelona (ya contactado)
-INSERT INTO leads (name, phone, email, city, postal_code, zone, source, notes, status, priority) VALUES
-('Antonio Fernández', '+34600555666', 'antonio@example.com', 'Barcelona', '08020', 'Barcelona', 'Cold Email', 'Restaurante necesita sistema de reservas', 'CONTACTED', 2);
+INSERT INTO leads (business_name, name, phone, city, sector, status, notes) VALUES
+('Restaurante La Plaza', 'Antonio Fernández', '+34600555666', 'Barcelona', 'Hostelería', 'ganado', 'Restaurante necesita sistema de reservas');
 
 -- =====================================================
 -- ASIGNACIONES DE EJEMPLO
@@ -133,11 +128,12 @@ ORDER BY a.zone, u.name;
 
 -- Verificar leads creados
 SELECT 
+  l.business_name,
   l.name,
   l.city,
-  l.zone,
+  l.sector,
   l.status,
-  l.source,
+  l.assigned_to,
   l.created_at
 FROM leads l
 ORDER BY l.created_at DESC

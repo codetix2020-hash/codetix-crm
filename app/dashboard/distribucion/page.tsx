@@ -8,21 +8,21 @@ import { User, Send, Shuffle } from 'lucide-react'
 
 interface Lead {
   id: string
-  business_name: string
-  contact_name: string | null
+  business_name: string | null
+  name: string | null
   phone: string | null
-  email: string | null
-  zone: string | null
-  source: string | null
+  city: string | null
+  sector: string | null
+  status: string | null
   created_at: string
   assigned_to: string | null
+  notes: string | null
 }
 
 interface Agent {
   id: string
   name: string
   email: string
-  zone: string | null
 }
 
 interface LeadHistoryEntry {
@@ -45,8 +45,6 @@ export default function LeadDistributionPage() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [history, setHistory] = useState<LeadHistoryEntry[]>([])
 
-  const [zoneFilter, setZoneFilter] = useState('todos')
-  const [sourceFilter, setSourceFilter] = useState('todos')
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([])
 
   const [isAssignOpen, setIsAssignOpen] = useState(false)
@@ -63,13 +61,11 @@ export default function LeadDistributionPage() {
     const [{ data: leadsData }, { data: agentsData }, { data: historyData }] = await Promise.all([
       supabase
         .from('leads')
-        .select(
-          'id, business_name, contact_name, phone, email, zone, source, created_at, assigned_to'
-        )
+        .select('id, business_name, name, phone, city, sector, status, notes, created_at, assigned_to')
         .order('created_at', { ascending: false }),
       supabase
         .from('users')
-        .select('id, name, email, zone')
+        .select('id, name, email')
         .eq('role', 'agent')
         .order('name', { ascending: true }),
       supabase
@@ -85,28 +81,10 @@ export default function LeadDistributionPage() {
     setLoading(false)
   }
 
-  const zones = useMemo(() => {
-    const unique = new Set<string>()
-    leads.forEach((lead) => {
-      if (lead.zone) unique.add(lead.zone)
-    })
-    return Array.from(unique)
-  }, [leads])
-
-  const sources = useMemo(() => {
-    const unique = new Set<string>()
-    leads.forEach((lead) => {
-      if (lead.source) unique.add(lead.source)
-    })
-    return Array.from(unique)
-  }, [leads])
-
   const unassignedLeads = useMemo(() => {
     return leads
       .filter((lead) => !lead.assigned_to)
-      .filter((lead) => (zoneFilter === 'todos' ? true : lead.zone === zoneFilter))
-      .filter((lead) => (sourceFilter === 'todos' ? true : lead.source === sourceFilter))
-  }, [leads, zoneFilter, sourceFilter])
+  }, [leads])
 
   const totalUnassigned = useMemo(() => leads.filter((lead) => !lead.assigned_to).length, [leads])
   const totalAssigned = leads.length - totalUnassigned
@@ -249,23 +227,12 @@ export default function LeadDistributionPage() {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white/40 backdrop-blur-md border border-white/20 rounded-2xl p-4 shadow-lg">
-        <div className="flex flex-wrap gap-4">
-          <FilterSelect
-            label="Zona"
-            value={zoneFilter}
-            onChange={setZoneFilter}
-            options={zones}
-            placeholder="Todas las zonas"
-          />
-          <FilterSelect
-            label="Fuente"
-            value={sourceFilter}
-            onChange={setSourceFilter}
-            options={sources}
-            placeholder="Todas las fuentes"
-          />
+        <div className="flex flex-col">
+          <span className="text-sm text-gray-500">Leads pendientes</span>
+          <span className="text-lg font-semibold text-gray-800">
+            {unassignedLeads.length} sin asignar
+          </span>
         </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={() => openAssignModal()}
@@ -317,8 +284,9 @@ export default function LeadDistributionPage() {
                 </th>
                 <th className="px-6 py-3">Negocio</th>
                 <th className="px-6 py-3">Contacto</th>
-                <th className="px-6 py-3">Zona</th>
-                <th className="px-6 py-3">Fuente</th>
+                <th className="px-6 py-3">Ciudad</th>
+                <th className="px-6 py-3">Sector</th>
+                <th className="px-6 py-3">Estado</th>
                 <th className="px-6 py-3">Creado</th>
                 <th className="px-6 py-3 text-right">Acciones</th>
               </tr>
@@ -326,7 +294,7 @@ export default function LeadDistributionPage() {
             <tbody className="divide-y divide-white/20 backdrop-blur">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-10 text-center text-gray-500">
                     Cargando leads...
                   </td>
                 </tr>
@@ -341,10 +309,15 @@ export default function LeadDistributionPage() {
                         className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                       />
                     </td>
-                    <td className="px-6 py-4 font-medium text-gray-800">{lead.business_name}</td>
-                    <td className="px-6 py-4 text-gray-600">{lead.contact_name ?? '—'}</td>
-                    <td className="px-6 py-4 text-gray-600">{lead.zone ?? '—'}</td>
-                    <td className="px-6 py-4 text-gray-600">{lead.source ?? '—'}</td>
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      {lead.business_name ?? lead.name ?? '—'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-600">{lead.name ?? '—'}</td>
+                    <td className="px-6 py-4 text-gray-600">{lead.city ?? '—'}</td>
+                    <td className="px-6 py-4 text-gray-600">{lead.sector ?? '—'}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {lead.status ? lead.status : '—'}
+                    </td>
                     <td className="px-6 py-4 text-gray-600">{formatDate(lead.created_at)}</td>
                     <td className="px-6 py-4 text-right">
                       <button
@@ -361,7 +334,7 @@ export default function LeadDistributionPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-10 text-center text-gray-500">
                     No hay leads sin asignar según los filtros actuales.
                   </td>
                 </tr>
@@ -493,34 +466,3 @@ function StatCard({
   )
 }
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  placeholder,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  options: string[]
-  placeholder: string
-}) {
-  return (
-    <label className="text-sm text-gray-500 space-y-1">
-      <span>{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="ml-0 block rounded-lg border border-white/30 bg-white/60 px-3 py-2 text-sm text-gray-700 shadow focus:outline-none focus:ring-2 focus:ring-brand-500"
-      >
-        <option value="todos">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
-  )
-}

@@ -35,18 +35,15 @@ create table if not exists agents (
 -- Tabla leads
 create table if not exists leads (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
-  phone text,
-  email text,
-  city text,
-  postal_code text,
-  zone text,
-  source text,
-  notes text,
-  status text default 'NEW' check (status in ('NEW', 'CONTACTED', 'DEMO', 'WON', 'LOST')),
-  priority int default 1 check (priority between 1 and 5),
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  business_name text,
+  name text,
+  phone text,
+  sector text,
+  city text,
+  status text default 'nuevo',
+  assigned_to uuid references agents(id),
+  notes text
 );
 
 -- Tabla asignaciones
@@ -99,9 +96,9 @@ create table if not exists metrics (
 -- ÍNDICES
 -- =====================================================
 
-create index if not exists idx_leads_zone on leads(zone);
-create index if not exists idx_leads_status on leads(status);
-create index if not exists idx_leads_created on leads(created_at desc);
+create index if not exists leads_status_city_sector_idx on leads(status, city, sector);
+create index if not exists leads_assigned_to_idx on leads(assigned_to);
+create index if not exists leads_created_at_idx on leads(created_at desc);
 create index if not exists idx_assignments_lead on assignments(lead_id);
 create index if not exists idx_assignments_agent on assignments(agent_id);
 create index if not exists idx_interactions_lead on interactions(lead_id);
@@ -144,14 +141,14 @@ declare
 begin
   select jsonb_build_object(
     'total_leads', count(*),
-    'new', count(*) filter (where l.status = 'NEW'),
-    'contacted', count(*) filter (where l.status = 'CONTACTED'),
-    'demo', count(*) filter (where l.status = 'DEMO'),
-    'won', count(*) filter (where l.status = 'WON'),
-    'lost', count(*) filter (where l.status = 'LOST'),
+    'nuevo', count(*) filter (where l.status = 'nuevo'),
+    'contactado', count(*) filter (where l.status = 'contactado'),
+    'en_progreso', count(*) filter (where l.status = 'en_progreso'),
+    'ganado', count(*) filter (where l.status = 'ganado'),
+    'perdido', count(*) filter (where l.status = 'perdido'),
     'conversion_rate', 
       case when count(*) > 0 
-        then round((count(*) filter (where l.status = 'WON')::numeric / count(*)) * 100, 2)
+        then round((count(*) filter (where l.status = 'ganado')::numeric / count(*)) * 100, 2)
         else 0 
       end
   )
@@ -204,10 +201,6 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger leads_updated_at
-before update on leads
-for each row execute function update_updated_at();
-
 create trigger users_updated_at
 before update on users
 for each row execute function update_updated_at();
@@ -242,38 +235,40 @@ alter table assignments enable row level security;
 alter table interactions enable row level security;
 alter table metrics enable row level security;
 
--- Política: agentes solo ven sus leads asignados
-create policy "Agents see assigned leads"
+-- Política: webs públicas (anon) pueden insertar leads
+create policy "public_insert_leads"
+on leads for insert
+to anon
+with check (true);
+
+-- Política: comerciales ven solo sus leads
+create policy "agents_select_own_leads"
 on leads for select
-using (
-  exists (
-    select 1 from assignments a
-    where a.lead_id = leads.id
-      and a.agent_id = auth.uid()
-  )
-);
+to authenticated
+using (assigned_to = auth.uid());
 
--- Política: agentes pueden actualizar sus leads
-create policy "Agents update assigned leads"
+-- Política: comerciales actualizan solo sus leads
+create policy "agents_update_own_leads"
 on leads for update
-using (
-  exists (
-    select 1 from assignments a
-    where a.lead_id = leads.id
-      and a.agent_id = auth.uid()
-  )
-);
+to authenticated
+using (assigned_to = auth.uid())
+with check (assigned_to = auth.uid());
 
--- Política: admins ven y modifican todo
-create policy "Admins see all leads"
-on leads for all
-using (
-  exists (
-    select 1 from users
-    where users.id = auth.uid()
-      and users.role = 'admin'
-  )
-);
+-- Política: admins ven todo
+create policy "admin_select_all"
+on leads for select
+using (auth.role() = 'admin');
+
+-- Política: admins actualizan todo
+create policy "admin_update_all"
+on leads for update
+using (auth.role() = 'admin')
+with check (auth.role() = 'admin');
+
+-- Política: admins pueden borrar
+create policy "admin_delete_all"
+on leads for delete
+using (auth.role() = 'admin');
 
 -- Política: todos ven sus asignaciones
 create policy "Users see their assignments"
