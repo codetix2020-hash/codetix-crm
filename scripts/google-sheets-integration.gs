@@ -30,6 +30,17 @@ const CONFIG = {
 
 const CRM_API_URL = CONFIG.CRM_BASE_URL + '/api/leads';
 
+const ALLOWED_FIELDS = [
+  'business_name',
+  'name',
+  'phone',
+  'sector',
+  'city',
+  'status',
+  'assigned_to',
+  'notes',
+];
+
 const COLUMN_INDEX = {
   business_name: 0,
   name: 1,
@@ -39,6 +50,12 @@ const COLUMN_INDEX = {
   notes: 5,
   status: null,
   assigned_to: null,
+};
+
+const getColumnCount = () => {
+  const indices = Object.values(COLUMN_INDEX).filter((value) => typeof value === 'number');
+  const maxIndex = indices.length ? Math.max.apply(null, indices) : 0;
+  return Math.max(6, maxIndex + 1);
 };
 
 const STATUS_COLUMN = 7; // Columna G (1-based)
@@ -80,19 +97,8 @@ const buildLeadPayload = (row) => {
 };
 
 const cleanLeadPayload = (lead) => {
-  const allowed = [
-    'business_name',
-    'name',
-    'phone',
-    'sector',
-    'city',
-    'status',
-    'assigned_to',
-    'notes',
-  ];
-
   const payload = {};
-  allowed.forEach((field) => {
+  ALLOWED_FIELDS.forEach((field) => {
     const value = lead[field];
     if (value !== null && value !== undefined && value !== '') {
       payload[field] = value;
@@ -105,18 +111,18 @@ const cleanLeadPayload = (lead) => {
 /**
  * Envía el lead de la última fila al CRM
  */
-function sendLeadToCRM() {
+function sendLeadToCRM(rowIndex) {
   const sheet = SpreadsheetApp.getActiveSheet();
-  const lastRow = sheet.getLastRow();
+  const effectiveRow = rowIndex || sheet.getLastRow();
   
   // Validar que hay datos
-  if (lastRow < 2) {
+  if (effectiveRow < 2) {
     Logger.log('No hay datos para enviar');
     return;
   }
   
   // Obtener datos de la última fila
-  const range = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn());
+  const range = sheet.getRange(effectiveRow, 1, 1, getColumnCount());
   const data = range.getValues()[0];
 
   const lead = buildLeadPayload(data);
@@ -144,7 +150,7 @@ function sendLeadToCRM() {
     const result = JSON.parse(response.getContentText());
     
     // Marcar resultado en columna G
-    const statusCell = sheet.getRange(lastRow, STATUS_COLUMN);
+    const statusCell = sheet.getRange(effectiveRow, STATUS_COLUMN);
     
     if (statusCode === 200 && result.success) {
       statusCell.setValue('✅ Enviado');
@@ -152,7 +158,7 @@ function sendLeadToCRM() {
       Logger.log('Lead enviado exitosamente');
       
       // Opcional: guardar respuesta recibida en columna H
-      sheet.getRange(lastRow, RESPONSE_COLUMN).setValue(JSON.stringify(result));
+      sheet.getRange(effectiveRow, RESPONSE_COLUMN).setValue(JSON.stringify(result));
     } else {
       statusCell.setValue('❌ Error: ' + (result.error || 'Desconocido'));
       statusCell.setBackground('#f8d7da');
@@ -184,11 +190,7 @@ function sendMultipleLeads(maxRows = 10) {
     
     // Solo procesar filas sin estado
     if (!status || status === '') {
-      // Seleccionar esta fila temporalmente
-      sheet.setActiveRange(sheet.getRange(row, 1));
-      
-      // Enviar
-      sendLeadToCRM();
+      sendLeadToCRM(row);
       
       processed++;
       
@@ -219,7 +221,7 @@ function onEdit(e) {
     if (!currentStatus || currentStatus === '') {
       // Esperar 2 segundos para dar tiempo a completar otras columnas
       Utilities.sleep(2000);
-      sendLeadToCRM();
+      sendLeadToCRM(row);
     }
   }
 }
