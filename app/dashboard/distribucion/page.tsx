@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils'
 import { Toaster, toast } from 'react-hot-toast'
-import { User, Send, Shuffle } from 'lucide-react'
+import { User, Send, Shuffle, Trash2 } from 'lucide-react'
 
 interface Lead {
   id: string
@@ -40,6 +40,7 @@ export default function LeadDistributionPage() {
   const [loading, setLoading] = useState(true)
   const [assigning, setAssigning] = useState(false)
   const [autoDistributing, setAutoDistributing] = useState(false)
+  const [removingDuplicates, setRemovingDuplicates] = useState(false)
 
   const [leads, setLeads] = useState<Lead[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
@@ -203,6 +204,45 @@ export default function LeadDistributionPage() {
     }
   }
 
+  const handleRemoveDuplicates = async () => {
+    const confirmed = window.confirm(
+      '¿Estás seguro de que deseas eliminar los leads duplicados?\n\nEsta acción es irreversible. Se mantendrá el registro más antiguo de cada duplicado.'
+    )
+
+    if (!confirmed) return
+
+    setRemovingDuplicates(true)
+
+    try {
+      const response = await fetch('/api/leads/dedupe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload?.error || 'No se pudo eliminar los duplicados.')
+      }
+
+      if (payload.duplicates_removed > 0) {
+        toast.success(
+          `✅ Eliminados ${payload.duplicates_removed} leads duplicados. Total único: ${payload.unique_leads}`
+        )
+        await fetchData()
+      } else {
+        toast('No se encontraron leads duplicados.')
+      }
+    } catch (error) {
+      console.error('Error eliminando duplicados:', error)
+      toast.error('No se pudo completar la eliminación de duplicados.')
+    } finally {
+      setRemovingDuplicates(false)
+    }
+  }
+
   return (
     <div className="p-6 space-y-8">
       <Toaster position="top-right" />
@@ -248,6 +288,15 @@ export default function LeadDistributionPage() {
           >
             <Shuffle className="w-4 h-4" />
             {autoDistributing ? 'Repartiendo...' : 'Reparto automático'}
+          </button>
+          <button
+            onClick={handleRemoveDuplicates}
+            className="px-4 py-2 rounded-lg bg-red-500/90 text-white shadow flex items-center gap-2 hover:bg-red-600 transition"
+            disabled={removingDuplicates || !leads.length}
+            title="Eliminar leads duplicados por email o teléfono"
+          >
+            <Trash2 className="w-4 h-4" />
+            {removingDuplicates ? 'Eliminando...' : 'Eliminar duplicados'}
           </button>
         </div>
       </div>

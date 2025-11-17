@@ -23,11 +23,17 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  // Construir el objeto de usuario con email de auth
+  const userWithEmail = userProfile ? {
+    ...userProfile,
+    email: user.email || ''
+  } : null
+
   return (
     <div className="flex h-screen">
-      <Sidebar />
+      <Sidebar role={userProfile?.role} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header user={userProfile} />
+        <Header user={userWithEmail} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <div className="container mx-auto px-6 py-8">
             {children}
