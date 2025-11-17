@@ -61,11 +61,16 @@ export default function LeadsPage() {
         setUserRole(profile?.role || null);
 
         // Fetch de leads basado en rol
-        const query = supabase
+        let query = supabase
           .from('leads')
           .select('id, business_name, name, phone, city, sector, status, notes, created_at, assigned_to')
           .order('created_at', { ascending: false })
-        
+
+        // Si NO es admin, solo ver leads asignados a él
+        if (profile?.role !== 'admin') {
+          query = query.eq('assigned_to', session.user.id)
+        }
+
         const { data: leadsData } = await query;
         if (leadsData) {
           const normalized = (leadsData as any[]).map((lead) => ({

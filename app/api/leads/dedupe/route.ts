@@ -51,25 +51,60 @@ export async function POST() {
       })
     }
 
-    // Identificar duplicados por email o phone
-    const uniqueMap = new Map()
+    // Identificar duplicados por:
+    // 1. Mismo email
+    // 2. Mismo teléfono
+    // 3. Mismo nombre + mismo teléfono
+    // 4. Mismo business_name (web)
+    const uniqueMap = new Map<string, string>()
     const duplicates: string[] = []
 
     leads.forEach((lead) => {
-      const key = lead.email || lead.phone
+      const keys: string[] = []
 
-      if (!key) {
-        // Lead sin email ni teléfono, lo ignoramos
+      // Normalizar y crear claves para detectar duplicados
+      if (lead.email?.trim()) {
+        keys.push(`email:${lead.email.toLowerCase().trim()}`)
+      }
+
+      if (lead.phone?.trim()) {
+        // Normalizar teléfono removiendo espacios y caracteres especiales
+        const normalizedPhone = lead.phone.replace(/[\s\-\(\)]/g, '')
+        keys.push(`phone:${normalizedPhone}`)
+
+        // Si tiene nombre + teléfono, crear clave combinada
+        if (lead.name?.trim()) {
+          const normalizedName = lead.name.toLowerCase().trim()
+          keys.push(`name-phone:${normalizedName}:${normalizedPhone}`)
+        }
+      }
+
+      // Detectar duplicados por business_name (web)
+      if (lead.business_name?.trim()) {
+        const normalizedBusiness = lead.business_name.toLowerCase().trim()
+        keys.push(`business:${normalizedBusiness}`)
+      }
+
+      // Si el lead no tiene ninguna clave única, lo ignoramos
+      if (keys.length === 0) {
         return
       }
 
-      if (uniqueMap.has(key)) {
-        // Este es un duplicado
+      // Verificar si alguna de las claves ya existe
+      let isDuplicate = false
+      for (const key of keys) {
+        if (uniqueMap.has(key)) {
+          isDuplicate = true
+          console.log(`[DEDUPE] Duplicado encontrado: ${key} (ID: ${lead.id})`)
+          break
+        }
+      }
+
+      if (isDuplicate) {
         duplicates.push(lead.id)
-        console.log(`[DEDUPE] Duplicado encontrado: ${key} (ID: ${lead.id})`)
       } else {
-        // Primer registro con este email/phone
-        uniqueMap.set(key, lead.id)
+        // Registrar todas las claves para este lead
+        keys.forEach((key) => uniqueMap.set(key, lead.id))
       }
     })
 
