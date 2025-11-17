@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import { LeadCard, Lead } from './LeadCard'
 import { LeadFilters } from './LeadFilters'
 import { LeadForm } from './LeadForm'
-import { PlusCircle } from 'lucide-react'
+import { PlusCircle, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { toast, Toaster } from 'react-hot-toast'
 
 // Definimos los tipos para los agentes
 type Agent = {
@@ -45,6 +46,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [leadToEdit, setLeadToEdit] = useState<Lead | null>(null)
+  const [removingDuplicates, setRemovingDuplicates] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -167,6 +169,66 @@ export default function LeadsPage() {
     }
   }
 
+  const handleRemoveDuplicates = async () => {
+    const confirmed = window.confirm(
+      '¿Estás seguro de que deseas eliminar los leads duplicados?\n\nEsta acción es irreversible. Se mantendrá el registro más antiguo de cada duplicado.'
+    )
+
+    if (!confirmed) return
+
+    setRemovingDuplicates(true)
+
+    try {
+      const response = await fetch('/api/leads/dedupe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const payload = await response.json()
+
+      if (!response.ok || !payload.success) {
+        throw new Error(payload?.error || 'No se pudo eliminar los duplicados.')
+      }
+
+      if (payload.duplicates_removed > 0) {
+        toast.success(
+          `✅ Eliminados ${payload.duplicates_removed} leads duplicados. Total único: ${payload.unique_leads}`
+        )
+        // Recargar leads
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const query = supabase
+            .from('leads')
+            .select('id, business_name, name, phone, city, sector, status, notes, created_at, assigned_to')
+            .order('created_at', { ascending: false })
+
+          const { data: leadsData } = await query;
+          if (leadsData) {
+            const normalized = (leadsData as any[]).map((lead) => ({
+              ...lead,
+              status: toCanonicalStatus(lead.status),
+              sector: lead.sector ?? null,
+              assigned_to: lead.assigned_to ?? null,
+              created_at: lead.created_at
+                ? new Date(lead.created_at).toISOString()
+                : new Date().toISOString(),
+            }))
+            setLeads(normalized as Lead[])
+          }
+        }
+      } else {
+        toast('No se encontraron leads duplicados.')
+      }
+    } catch (error) {
+      console.error('Error eliminando duplicados:', error)
+      toast.error('No se pudo completar la eliminación de duplicados.')
+    } finally {
+      setRemovingDuplicates(false)
+    }
+  }
+
   const openFormForEdit = (lead: Lead) => {
     setLeadToEdit(lead)
     setIsFormOpen(true)
@@ -184,15 +246,29 @@ export default function LeadsPage() {
 
   return (
     <div className="p-6">
+      <Toaster position="top-right" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Gestión de Leads</h1>
-        <button
-          onClick={openFormForCreate}
-          className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700"
-        >
-          <PlusCircle size={20} className="mr-2" />
-          Nuevo Lead
-        </button>
+        <div className="flex items-center gap-3">
+          {userRole === 'admin' && (
+            <button
+              onClick={handleRemoveDuplicates}
+              className="flex items-center bg-red-500 text-white px-4 py-2 rounded-lg shadow hover:bg-red-600 transition"
+              disabled={removingDuplicates || !leads.length}
+              title="Eliminar leads duplicados por email o teléfono"
+            >
+              <Trash2 size={20} className="mr-2" />
+              {removingDuplicates ? 'Eliminando...' : 'Eliminar duplicados'}
+            </button>
+          )}
+          <button
+            onClick={openFormForCreate}
+            className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg shadow hover:bg-indigo-700"
+          >
+            <PlusCircle size={20} className="mr-2" />
+            Nuevo Lead
+          </button>
+        </div>
       </div>
       
       <LeadFilters activeStatus={statusFilter} onStatusChange={setStatusFilter} />

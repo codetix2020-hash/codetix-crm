@@ -17,21 +17,43 @@ export default async function DashboardLayout({
     redirect('/')
   }
 
-  const { data: userProfile } = await supabase
+  const { data: userProfile, error: profileError } = await supabase
     .from('users')
-    .select('name, role')
+    .select('name, role, email')
     .eq('id', user.id)
     .single()
 
-  // Construir el objeto de usuario con email de auth
+  // Log para debugging
+  if (profileError) {
+    console.error('[LAYOUT] Error fetching user profile:', profileError)
+  }
+
+  if (!userProfile) {
+    console.warn('[LAYOUT] No user profile found for user:', user.id)
+  }
+
+  // Construir el objeto de usuario con email de auth y profile
   const userWithEmail = userProfile ? {
-    ...userProfile,
+    name: userProfile.name || '',
+    role: userProfile.role || 'agent',
+    email: userProfile.email || user.email || ''
+  } : {
+    name: '',
+    role: 'agent',
     email: user.email || ''
-  } : null
+  }
+
+  // Log para verificar datos
+  console.log('[LAYOUT] User data:', {
+    id: user.id,
+    email: userWithEmail.email,
+    name: userWithEmail.name,
+    role: userWithEmail.role
+  })
 
   return (
     <div className="flex h-screen">
-      <Sidebar role={userProfile?.role} />
+      <Sidebar role={userWithEmail.role} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header user={userWithEmail} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto">

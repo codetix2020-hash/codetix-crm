@@ -15,6 +15,9 @@ export default function Sidebar({ role }: SidebarProps) {
   const router = useRouter()
   const supabase = createClient()
 
+  // Log para debugging
+  console.log('[SIDEBAR] Role received:', role)
+
   // Construir items del menú según el rol
   const sidebarItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -23,6 +26,9 @@ export default function Sidebar({ role }: SidebarProps) {
       ? [{ href: '/dashboard/distribucion', icon: Send, label: 'Reparto' }]
       : []),
   ]
+
+  // Log para ver los items del menú
+  console.log('[SIDEBAR] Menu items:', sidebarItems.map(item => item.label))
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
