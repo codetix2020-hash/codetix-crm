@@ -6,16 +6,23 @@ import { LayoutDashboard, Users, LogOut, Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
-const sidebarItems = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/dashboard/leads', icon: Users, label: 'Leads' },
-  { href: '/dashboard/distribucion', icon: Send, label: 'Reparto' },
-]
+interface SidebarProps {
+  role?: string
+}
 
-export default function Sidebar() {
+export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  // Construir items del menú según el rol
+  const sidebarItems = [
+    { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/dashboard/leads', icon: Users, label: 'Leads' },
+    ...(role === 'admin'
+      ? [{ href: '/dashboard/distribucion', icon: Send, label: 'Reparto' }]
+      : []),
+  ]
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

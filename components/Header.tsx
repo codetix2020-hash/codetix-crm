@@ -18,10 +18,17 @@ export default function Header({ user }: HeaderProps) {
   // Calcular el displayLabel según el rol
   const displayLabel = role === 'admin'
     ? 'ADMIN'
-    : (name?.charAt(0)?.toUpperCase() ?? email?.charAt(0)?.toUpperCase() ?? '?')
+    : (name?.trim()?.charAt(0)?.toUpperCase() ||
+       email?.trim()?.charAt(0)?.toUpperCase() ||
+       '?')
 
   // Tooltip text
   const tooltipText = name || email || 'Usuario'
+
+  // Debug: loguear si falta información
+  if (displayLabel === '?') {
+    console.warn('[HEADER] Missing name/email for user:', { name, email, role })
+  }
 
   return (
     <header className="h-20 bg-white/30 backdrop-blur-lg border-b border-white/20 flex items-center justify-end px-6">
