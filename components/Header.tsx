@@ -38,11 +38,18 @@ export default function Header({ user }: HeaderProps) {
           <p className="text-sm text-gray-500 capitalize">{role}</p>
         </div>
         <div className="relative group">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg cursor-pointer">
+          <div
+            title={tooltipText}
+            className={`w-12 h-12 flex items-center justify-center rounded-full font-semibold text-white shadow-lg cursor-pointer ${
+              role === 'admin'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                : 'bg-gradient-to-r from-violet-500 to-purple-600'
+            }`}
+          >
             {role === 'admin' ? (
               <div className="flex flex-col items-center justify-center">
                 <Crown className="w-4 h-4 mb-0.5" />
-                <span className="text-[8px] font-semibold">{displayLabel}</span>
+                <span className="text-[8px] font-bold">{displayLabel}</span>
               </div>
             ) : (
               <span className="text-lg">{displayLabel}</span>
