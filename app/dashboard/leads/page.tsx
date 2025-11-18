@@ -32,7 +32,7 @@ export default async function LeadsPage() {
       notes: lead.notes ?? null,
       created_at: lead.created_at
         ? new Date(lead.created_at).toISOString()
-        : new Date().toISOString(),
+        : '1970-01-01T00:00:00.000Z',
     }))
 
   return <LeadsClient initialLeads={normalizedLeads} role={role} currentUserId={user.id} />

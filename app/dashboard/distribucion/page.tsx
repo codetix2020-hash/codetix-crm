@@ -43,13 +43,13 @@ export default async function LeadDistributionPage() {
       status: toCanonicalStatus(le.status),
       assigned_to: le.assigned_to ?? null,
       notes: le.notes ?? null,
-      created_at: le.created_at ? new Date(le.created_at).toISOString() : new Date().toISOString(),
+      created_at: le.created_at ? new Date(le.created_at).toISOString() : '1970-01-01T00:00:00.000Z',
     })) ?? []
 
   const initialHistory =
     (historyData ?? []).map((entry: any) => ({
       ...entry,
-      created_at: entry.created_at ? new Date(entry.created_at).toISOString() : new Date().toISOString(),
+      created_at: entry.created_at ? new Date(entry.created_at).toISOString() : '1970-01-01T00:00:00.000Z',
     })) ?? []
 
   return (
