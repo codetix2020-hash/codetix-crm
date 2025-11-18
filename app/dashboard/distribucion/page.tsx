@@ -5,6 +5,20 @@ import { redirect } from 'next/navigation'
 
 type LeadStatus = 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
 
+type Lead = {
+  id: string
+  name: string | null
+  phone: string | null
+  email: string | null
+  business_name: string | null
+  status: string | null
+  assigned_to: string | null
+  city: string | null
+  sector: string | null
+  notes: string | null
+  created_at: string | null
+}
+
 const STATUS_MAP: Record<string, LeadStatus> = {
   nuevo: 'Nuevo',
   contactado: 'Contactado',
@@ -53,16 +67,17 @@ export default async function LeadDistributionPage() {
   if (historyError) console.error('[SERVER] history error:', historyError)
 
   const initialLeads =
-    (leadsData ?? []).map((lead) => ({
-      ...lead,
-      status: STATUS_MAP[(lead.status ?? '').toLowerCase()] ?? 'Nuevo',
-      assigned_to: lead.assigned_to ?? null,
-      notes: lead.notes ?? null,
-      created_at: lead.created_at ? new Date(lead.created_at).toISOString() : new Date().toISOString(),
+    ((leadsData ?? []) as Lead[]).map((le: Lead) => ({
+      ...le,
+      email: le.email ?? null,
+      status: STATUS_MAP[(le.status ?? '').toLowerCase()] ?? 'Nuevo',
+      assigned_to: le.assigned_to ?? null,
+      notes: le.notes ?? null,
+      created_at: le.created_at ? new Date(le.created_at).toISOString() : new Date().toISOString(),
     })) ?? []
 
   const initialHistory =
-    (historyData ?? []).map((entry) => ({
+    (historyData ?? []).map((entry: any) => ({
       ...entry,
       created_at: entry.created_at ? new Date(entry.created_at).toISOString() : new Date().toISOString(),
     })) ?? []

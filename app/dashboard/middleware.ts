@@ -1,5 +1,30 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createMiddlewareClient } from '@supabase/ssr'
+import { createServerClient } from '@supabase/ssr'
+
+function createMiddlewareClient({
+  req,
+  res,
+}: {
+  req: NextRequest
+  res: NextResponse
+}) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll().map(({ name, value }) => ({ name, value }))
+        },
+        setAll(cookies) {
+          cookies.forEach(({ name, value, options }) => {
+            res.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+}
 
 export async function middleware(req: NextRequest) {
   console.log('[MIDDLEWARE] EXECUTING --- PATH:', req.nextUrl.pathname)

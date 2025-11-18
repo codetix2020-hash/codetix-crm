@@ -15,6 +15,8 @@ type Stats = {
   conversionRate: number
 }
 
+type Counters = Omit<Stats, 'conversionRate'>
+
 const initialStats: Stats = {
   total: 0,
   new: 0,
@@ -69,8 +71,8 @@ export default function DashboardPage() {
         return
       }
 
-      const counters = data?.reduce(
-        (acc, lead) => {
+      const counters = data?.reduce<Counters>(
+        (acc: Counters, lead: { status: unknown }) => {
           acc.total += 1
           const mapped = mapStatus(lead.status)
           if (mapped) acc[mapped] += 1

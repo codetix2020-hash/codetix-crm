@@ -173,7 +173,10 @@ export default function LeadsClient({ initialLeads, role, currentUserId }: Leads
         </button>
       </div>
 
-      <LeadFilters activeStatus={statusFilter} onStatusChange={setStatusFilter} />
+      <LeadFilters
+        activeStatus={statusFilter}
+        onStatusChange={(status) => setStatusFilter((status ?? 'Todos') as FilterValue)}
+      />
 
       {isLoading ? (
         <p className="mt-6">Cargando leads...</p>

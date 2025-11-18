@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -8,13 +8,18 @@ export const metadata: Metadata = {
   title: 'CodeTix CRM',
   description: 'Sistema de gestión de leads para comerciales',
   manifest: '/manifest.json',
-  themeColor: '#2563eb',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'CodeTix CRM',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#2563eb',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({

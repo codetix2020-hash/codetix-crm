@@ -14,22 +14,17 @@ const normalizeRole = (raw: unknown): UserRole =>
 const createClient = (cookieStore: CookieStore) =>
   createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
+      getAll() {
+        return cookieStore.getAll().map(({ name, value }) => ({ name, value }))
       },
-      set(name: string, value: string, options?: Parameters<CookieStore['set']>[1]) {
-        try {
-          cookieStore.set({ name, value, ...options })
-        } catch {
-          // ignore set errors in RSC context
-        }
-      },
-      remove(name: string, options?: Parameters<CookieStore['delete']>[1]) {
-        try {
-          cookieStore.delete({ name, ...options })
-        } catch {
-          // ignore delete errors in RSC context
-        }
+      setAll(cookies) {
+        cookies.forEach(({ name, value, options }) => {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch {
+            // ignore set errors in RSC context
+          }
+        })
       },
     },
   })
