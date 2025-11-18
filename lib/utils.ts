@@ -22,8 +22,10 @@ export const getStatusColor = (status: string) => {
       return 'bg-yellow-100 text-yellow-800';
     case 'en_progreso':
       return 'bg-indigo-100 text-indigo-800';
+    case 'cerrado':
     case 'ganado':
       return 'bg-green-100 text-green-800';
+    case 'rechazado':
     case 'perdido':
       return 'bg-red-100 text-red-800';
     default:

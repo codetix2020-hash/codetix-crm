@@ -2,36 +2,7 @@ import DistributionClient from './DistributionClient'
 import { createClient } from '@/lib/supabase/server'
 import { getServerUserRole } from '@/lib/auth/getServerUserRole'
 import { redirect } from 'next/navigation'
-
-type LeadStatus = 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
-
-type Lead = {
-  id: string
-  name: string | null
-  phone: string | null
-  email: string | null
-  business_name: string | null
-  status: string | null
-  assigned_to: string | null
-  city: string | null
-  sector: string | null
-  notes: string | null
-  created_at: string | null
-}
-
-const STATUS_MAP: Record<string, LeadStatus> = {
-  nuevo: 'Nuevo',
-  contactado: 'Contactado',
-  contactada: 'Contactado',
-  en_progreso: 'Contactado',
-  progreso: 'Contactado',
-  ganado: 'Cerrado',
-  cerrado: 'Cerrado',
-  rechazado: 'Rechazado',
-  rechazada: 'Rechazado',
-  perdido: 'Rechazado',
-  perdida: 'Rechazado',
-}
+import { STATUS_MAP, toCanonicalStatus } from '@/types/lead'
 
 export default async function LeadDistributionPage() {
   const { user, role } = await getServerUserRole()
@@ -67,10 +38,9 @@ export default async function LeadDistributionPage() {
   if (historyError) console.error('[SERVER] history error:', historyError)
 
   const initialLeads =
-    ((leadsData ?? []) as Lead[]).map((le: Lead) => ({
+    (leadsData ?? []).map((le: any) => ({
       ...le,
-      email: le.email ?? null,
-      status: STATUS_MAP[(le.status ?? '').toLowerCase()] ?? 'Nuevo',
+      status: toCanonicalStatus(le.status),
       assigned_to: le.assigned_to ?? null,
       notes: le.notes ?? null,
       created_at: le.created_at ? new Date(le.created_at).toISOString() : new Date().toISOString(),

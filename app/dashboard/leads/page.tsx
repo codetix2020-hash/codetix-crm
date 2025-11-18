@@ -1,29 +1,9 @@
 import LeadsClient from './LeadsClient'
 import { createClient } from '@/lib/supabase/server'
-import type { Lead } from './LeadCard'
+import type { Lead } from '@/types/lead'
+import { toCanonicalStatus } from '@/types/lead'
 import { getServerUserRole } from '@/lib/auth/getServerUserRole'
 import { redirect } from 'next/navigation'
-
-type LeadStatus = 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
-
-const STATUS_MAP: Record<string, LeadStatus> = {
-  nuevo: 'Nuevo',
-  contactado: 'Contactado',
-  contactada: 'Contactado',
-  en_progreso: 'Contactado',
-  progreso: 'Contactado',
-  ganado: 'Cerrado',
-  cerrado: 'Cerrado',
-  perdida: 'Rechazado',
-  perdido: 'Rechazado',
-  rechazado: 'Rechazado',
-  rechazada: 'Rechazado',
-}
-
-const toCanonicalStatus = (value?: string | null): LeadStatus => {
-  const key = (value ?? '').toLowerCase()
-  return STATUS_MAP[key] ?? 'Nuevo'
-}
 
 export default async function LeadsPage() {
   const { user, role } = await getServerUserRole()

@@ -27,16 +27,12 @@ function createMiddlewareClient({
 }
 
 export async function middleware(req: NextRequest) {
-  console.log('[MIDDLEWARE] EXECUTING --- PATH:', req.nextUrl.pathname)
-
   let res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  console.log('[MIDDLEWARE] USER:', user?.email, 'ROLE RAW:', user?.user_metadata?.role)
 
   const pathname = req.nextUrl.pathname
 
@@ -56,8 +52,6 @@ export async function middleware(req: NextRequest) {
     const raw = profile?.role ?? user.user_metadata?.role
     role = typeof raw === 'string' && raw.toLowerCase() === 'admin' ? 'admin' : 'agent'
   }
-
-  console.log('[MIDDLEWARE] FINAL ROLE:', role)
 
   const isAdminRoute = pathname.startsWith('/dashboard/distribucion')
 

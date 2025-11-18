@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link'
 import StatusBadge from './StatusBadge'
 import { getWhatsAppLink, formatRelativeTime } from '@/lib/utils'

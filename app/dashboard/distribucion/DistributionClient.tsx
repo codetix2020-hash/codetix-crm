@@ -6,34 +6,7 @@ import { Toaster, toast } from 'react-hot-toast'
 import { User, Send, Shuffle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { UserRole } from '@/lib/auth/getServerUserRole'
-
-export type DistributionLead = {
-  id: string
-  business_name: string | null
-  name: string | null
-  phone: string | null
-  city: string | null
-  sector: string | null
-  status: string | null
-  created_at: string
-  assigned_to: string | null
-  notes: string | null
-}
-
-export type DistributionAgent = {
-  id: string
-  name: string
-  email: string
-}
-
-export type LeadHistoryEntry = {
-  id: string
-  lead_id: string
-  new_status: string | null
-  old_status: string | null
-  changed_by: string | null
-  created_at: string
-}
+import type { DistributionLead, DistributionAgent, LeadHistoryEntry } from '@/types/lead'
 
 type DistributionClientProps = {
   role: UserRole
@@ -63,11 +36,8 @@ export default function DistributionClient({
   const isAdmin = role === 'admin'
 
   useEffect(() => {
-    console.log('[CLIENT][distribucion] props initialLeads:', initialLeads.length)
     setLeads(initialLeads)
   }, [initialLeads])
-
-  console.log('[CLIENT][distribucion] leads state:', leads.length)
 
   const totalUnassigned = leads.length
   const totalAssigned = 0

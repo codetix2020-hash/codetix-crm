@@ -1,5 +1,3 @@
-'use client'
-
 interface HeaderProps {
   user: {
     name: string | null

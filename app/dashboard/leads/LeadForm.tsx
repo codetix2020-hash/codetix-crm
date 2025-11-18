@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lead } from './LeadCard'
+import type { Lead } from '@/types/lead'
 
 interface LeadFormProps {
   isOpen: boolean

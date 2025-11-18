@@ -2,34 +2,16 @@
 
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { LeadCard, Lead } from './LeadCard'
+import { LeadCard } from './LeadCard'
 import { LeadFilters } from './LeadFilters'
 import { LeadForm } from './LeadForm'
 import { PlusCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { UserRole } from '@/lib/auth/getServerUserRole'
+import type { Lead, LeadStatus } from '@/types/lead'
+import { toCanonicalStatus } from '@/types/lead'
 
-type LeadStatus = 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
 type FilterValue = 'Todos' | LeadStatus
-
-const STATUS_MAP: Record<string, LeadStatus> = {
-  nuevo: 'Nuevo',
-  contactado: 'Contactado',
-  contactada: 'Contactado',
-  en_progreso: 'Contactado',
-  progreso: 'Contactado',
-  ganado: 'Cerrado',
-  cerrado: 'Cerrado',
-  perdida: 'Rechazado',
-  perdido: 'Rechazado',
-  rechazado: 'Rechazado',
-  rechazada: 'Rechazado',
-}
-
-const toCanonicalStatus = (value?: string | null): LeadStatus => {
-  const key = (value ?? '').toLowerCase()
-  return STATUS_MAP[key] ?? 'Nuevo'
-}
 
 const normalizeLead = (lead: Lead): Lead => ({
   ...lead,

@@ -4,20 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { MoreVertical, Edit, Trash2, Building } from 'lucide-react'
 import { getStatusColor } from '@/lib/utils'
-
-export type Lead = {
-  id: string
-  business_name: string | null
-  name: string | null
-  phone: string | null
-  city: string | null
-  sector: string | null
-  status: 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
-  created_at: string
-  notes: string | null
-  assigned_to: string | null
-  assignments?: { agents: { users: { name: string } } }[]
-}
+import type { Lead } from '@/types/lead'
 
 interface LeadCardProps {
   lead: Lead
@@ -30,8 +17,6 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, canManage, onEdit, onD
   const [menuOpen, setMenuOpen] = useState(false)
   const agentName = lead.assigned_to ?? 'Sin asignar'
   const displayName = lead.business_name || lead.name || 'Lead sin nombre'
-
-  console.log('[CLIENT][LeadCard] render', lead.id, 'assigned_to:', lead.assigned_to, 'canManage:', canManage)
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },

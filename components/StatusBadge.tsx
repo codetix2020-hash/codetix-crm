@@ -1,3 +1,5 @@
+'use client'
+
 import { getStatusColor, getStatusLabel, getStatusEmoji } from '@/lib/utils'
 
 interface StatusBadgeProps {
