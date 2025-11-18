@@ -1,6 +1,6 @@
 'use client'
 
-const statuses = ['Nuevo', 'Contactado', 'Rechazado', 'Cerrado'] as const
+const statuses = ['Todos', 'Nuevo', 'Contactado', 'Rechazado', 'Cerrado'] as const
 
 interface LeadFiltersProps {
   activeStatus: string
@@ -13,16 +13,6 @@ export const LeadFilters: React.FC<LeadFiltersProps> = ({
 }) => {
   return (
     <div className="flex space-x-2 bg-gray-100 p-2 rounded-lg">
-      <button
-        onClick={() => onStatusChange('ALL')}
-        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-          activeStatus === 'ALL'
-            ? 'bg-indigo-600 text-white shadow'
-            : 'text-gray-600 hover:bg-gray-200'
-        }`}
-      >
-        Todos
-      </button>
       {statuses.map((status) => (
         <button
           key={status}

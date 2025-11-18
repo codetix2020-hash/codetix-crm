@@ -15,23 +15,23 @@ export type Lead = {
   status: 'Nuevo' | 'Contactado' | 'Rechazado' | 'Cerrado'
   created_at: string
   notes: string | null
-  assigned_to?: string | null
+  assigned_to: string | null
   assignments?: { agents: { users: { name: string } } }[]
 }
 
 interface LeadCardProps {
   lead: Lead
+  canManage: boolean
   onEdit: (lead: Lead) => void
   onDelete: (leadId: string) => void
 }
 
-export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) => {
+export const LeadCard: React.FC<LeadCardProps> = ({ lead, canManage, onEdit, onDelete }) => {
   const [menuOpen, setMenuOpen] = useState(false)
-  const agentName =
-    lead.assigned_to ||
-    lead.assignments?.[0]?.agents?.users?.name ||
-    'Sin asignar'
+  const agentName = lead.assigned_to ?? 'Sin asignar'
   const displayName = lead.business_name || lead.name || 'Lead sin nombre'
+
+  console.log('[CLIENT][LeadCard] render', lead.id, 'assigned_to:', lead.assigned_to, 'canManage:', canManage)
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -39,43 +39,45 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) =>
   }
 
   return (
-    <motion.div 
+    <motion.div
       variants={cardVariants}
       className="bg-white/60 backdrop-blur-md p-5 rounded-2xl shadow-lg relative border border-white/40 transition hover:bg-white/70 hover:-translate-y-1"
     >
       <div className="flex justify-between items-start">
         <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center border border-white/50">
-                <Building className="w-6 h-6 text-brand-500"/>
-            </div>
-            <div>
-              <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
-              <p className="text-sm text-gray-500">
-                {lead.name && lead.business_name ? `${lead.name} • ` : ''}
-                {lead.phone || 'Sin teléfono'}
-              </p>
-            </div>
+          <div className="w-12 h-12 bg-brand-50 rounded-full flex items-center justify-center border border-white/50">
+            <Building className="w-6 h-6 text-brand-500" />
+          </div>
+          <div>
+            <h3 className="font-bold text-lg text-gray-800">{displayName}</h3>
+            <p className="text-sm text-gray-500">
+              {lead.name && lead.business_name ? `${lead.name} • ` : ''}
+              {lead.phone || 'Sin teléfono'}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          className="p-1 rounded-full hover:bg-white/50"
-        >
-          <MoreVertical size={20} />
-        </button>
+        {canManage && (
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-1 rounded-full hover:bg-white/50"
+          >
+            <MoreVertical size={20} />
+          </button>
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
         <div>
-            <p className="text-gray-400">Ciudad</p>
-            <p className="text-gray-700 font-medium">{lead.city ?? '—'}</p>
+          <p className="text-gray-400">Ciudad</p>
+          <p className="text-gray-700 font-medium">{lead.city ?? '—'}</p>
         </div>
         <div>
-            <p className="text-gray-400">Agente</p>
-            <p className="text-gray-700 font-medium">{agentName}</p>
+          <p className="text-gray-400">Agente</p>
+          <p className="text-gray-700 font-medium">{agentName}</p>
         </div>
         <div className="text-right">
-            <p className="text-gray-400">Estado</p>
-            <span
+          <p className="text-gray-400">Estado</p>
+          <span
             className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(
               lead.status
             )}`}
@@ -85,8 +87,8 @@ export const LeadCard: React.FC<LeadCardProps> = ({ lead, onEdit, onDelete }) =>
         </div>
       </div>
 
-      {menuOpen && (
-        <motion.div 
+      {canManage && menuOpen && (
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.1 }}

@@ -1,21 +1,32 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { LayoutDashboard, Users, LogOut, Send } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import type { UserRole } from '@/lib/auth/getServerUserRole'
 
-const sidebarItems = [
+const ADMIN_ITEMS = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/dashboard/leads', icon: Users, label: 'Leads' },
   { href: '/dashboard/distribucion', icon: Send, label: 'Reparto' },
 ]
 
-export default function Sidebar() {
+const AGENT_ITEMS = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { href: '/dashboard/leads', icon: Users, label: 'Leads' },
+]
+
+interface SidebarProps {
+  role: UserRole
+}
+
+export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  const items = role === 'admin' ? ADMIN_ITEMS : AGENT_ITEMS
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -27,8 +38,9 @@ export default function Sidebar() {
       <div className="h-20 flex items-center justify-center border-b border-white/20">
         <h1 className="text-2xl font-bold text-brand-700">CodeTix CRM</h1>
       </div>
+
       <nav className="flex-1 px-4 py-6 space-y-2">
-        {sidebarItems.map((item) => (
+        {items.map((item) => (
           <Link
             key={item.href}
             href={item.href}
@@ -43,8 +55,9 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
+
       <div className="px-4 py-6 border-t border-white/20">
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-white/40"
         >
