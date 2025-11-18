@@ -36,8 +36,6 @@ const mapStatus = (status: unknown): keyof Omit<Stats, 'total' | 'conversionRate
 }
 
 export default function DashboardPage() {
-  console.log('[HYDRATION_CHECK]', { env: typeof window !== 'undefined' ? 'client' : 'server' })
-  
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<Stats>(initialStats)
